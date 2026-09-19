@@ -1,0 +1,9 @@
+build/
+.gradle/
+local.properties
+*.iml
+.idea/
+certificado.pem
+clave.pem
+*.pt
+__pycache__/
