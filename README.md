@@ -15,7 +15,7 @@ El video no sale de tu red: no se sube a ningún servidor de terceros.
 
 1. En el celular, abre la sección **Releases** de este repositorio y descarga `MeCam.apk`.
 2. Ábrelo y permite instalar apps de origen desconocido si el celular lo pide.
-3. En la app escribe la IP de la computadora y un nombre para la cámara (distinto en cada celular), y toca **Iniciar cámara**.
+3. En la app toca **Escanear QR para vincular** y apunta al QR que muestra la ventana de MeCam en la computadora (botón **Vincular dispositivo**). Después toca **Iniciar cámara**.
 
 La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android siempre pide confirmar la instalación).
 
@@ -25,8 +25,9 @@ La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android 
 2. Descarga el proyecto (en esta página, **Code** y luego **Download ZIP**) y extráelo. Abre la carpeta `servidor`.
 3. Haz doble clic en **Iniciar MeCam.bat**. La primera vez instala lo necesario y tarda varios minutos.
 4. En la ventana de MeCam, haz clic en el botón verde **Iniciar servidor**.
+5. Haz clic en **Vincular dispositivo** para que aparezca el QR (uno distinto, de un solo uso, por cada celular).
 
-La ventana muestra la IP que hay que escribir en la app de los celulares y abre el centro de control (`https://localhost:8443/ver`). La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, usa el botón **Abrir puertos del firewall** (una sola vez) o revisa las [preguntas frecuentes](FAQ.md).
+La ventana abre el centro de control (`https://localhost:8443/ver`) y muestra la lista de dispositivos vinculados. La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, usa el botón **Abrir puertos del firewall** (una sola vez) o revisa las [preguntas frecuentes](FAQ.md).
 
 Si prefieres la terminal: `cd servidor`, `python -m pip install -r requirements.txt` y `python servidor.py`.
 
@@ -44,10 +45,10 @@ Si prefieres la terminal: `cd servidor`, `python -m pip install -r requirements.
 - [ ] Audio
 - [ ] Alertas (Telegram) y grabación de clips
 - [ ] Zonas de alerta
-- [ ] Usuario y contraseña para ver las cámaras
+- [x] Vinculación por QR: un código distinto y de un solo uso por dispositivo, con conexión cifrada
 - [ ] Detección dentro del propio celular (sin computadora)
 
 ## Seguridad y privacidad
 
-- Hoy la página de visualización **no pide contraseña**: cualquiera dentro de tu Wi-Fi que conozca la dirección puede ver las cámaras. **No abras puertos en tu router.** Para verlas desde fuera de casa usa una VPN, como se explica en las [preguntas frecuentes](FAQ.md).
+- Cuando vinculas el primer dispositivo, MeCam se **protege**: solo entran los dispositivos vinculados con un QR (además de esta computadora y de tu red Tailscale). Mientras no hayas vinculado nada, la ventana muestra «Abierto». **No abras puertos en tu router.** Para verlas desde fuera de casa usa una VPN, como se explica en las [preguntas frecuentes](FAQ.md).
 - Grabar personas o la vía pública puede estar regulado (por ejemplo, RGPD en Europa). Úsalo solo en espacios propios y avisa a quien pueda ser grabado.

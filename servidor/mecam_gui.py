@@ -204,7 +204,7 @@ class App:
             msg = ("Los puertos 8443 y 8080 ya están en uso.\n\n¿Hay otro MeCam abierto, o la ventana negra "
                    "de antes? Ciérralo e inténtalo de nuevo.")
         elif isinstance(err, ImportError):
-            msg = (f"Falta instalar algo: {err}\n\nBorra el archivo «.instalado» de la carpeta y abre "
+            msg = (f"Falta instalar algo: {err}\n\nBorra el archivo «.instalado-v2» de la carpeta y abre "
                    "«Iniciar MeCam.bat» de nuevo: instala lo necesario en el primer arranque.")
         elif err is not None:
             msg = (f"No se pudo iniciar el servidor:\n\n{err}\n\nSi es la primera vez, revisa tu conexión a "
@@ -358,7 +358,13 @@ class App:
         self._dibujar_qr(url)
 
     def _dibujar_qr(self, url):
-        import qrcode
+        try:
+            import qrcode
+        except ImportError:
+            self.cerrar_qr()
+            messagebox.showerror("MeCam", "Falta instalar el componente del QR.\n\nCierra MeCam, borra el archivo "
+                                 "«.instalado-v2» de la carpeta (si existe) y abre «Iniciar MeCam.bat» de nuevo.")
+            return
         qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=2)
         qr.add_data(url)
         qr.make(fit=True)

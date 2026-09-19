@@ -5,6 +5,7 @@ Guía para la versión 5 de MeCam o superior. Si algo de esta guía no coincide 
 **Índice**
 - [Ver las cámaras](#ver-las-cámaras)
 - [El visor (centro de control)](#el-visor-centro-de-control)
+- [Vincular dispositivos (QR)](#vincular-dispositivos-qr)
 - [Instalación y uso](#instalación-y-uso)
 - [Calor, batería y segundo plano](#calor-batería-y-segundo-plano)
 - [Detección](#detección)
@@ -29,17 +30,17 @@ MeCam funciona dentro de tu red: los celulares mandan el video a una computadora
 4. Cuando estés fuera de casa, abre **Tailscale** en el celular y enciende la conexión. Luego abre **Chrome** y escribe `https://100.101.102.103:8443/ver` (con tu dirección).
 5. Saldrá el aviso "Tu conexión no es privada". Toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**. Es normal, porque MeCam usa un certificado propio.
 
-Requisitos: la computadora debe estar **encendida**, con internet y con el servidor en marcha. Los celulares cámara siguen en el Wi-Fi de casa.
+Requisitos: la computadora debe estar **encendida**, con internet y con el servidor en marcha. **No hace falta vincular** ese celular: MeCam confía en tu red Tailscale (mira «¿Hace falta vincular si veo las cámaras por Tailscale?»). Los celulares cámara siguen en el Wi-Fi de casa.
 
 Tailscale tiene un plan gratuito para uso personal. Las condiciones pueden cambiar, así que revísalas en su sitio web.
 
 ### ¿Puedo abrir un puerto en el router y entrar con mi IP pública?
 
-**No lo recomendamos.** Hoy MeCam **no tiene usuario ni contraseña**: cualquiera que llegue a la dirección puede ver tus cámaras. Abrir un puerto lo dejaría expuesto a todo internet. Usa una VPN (ver pregunta anterior).
+**No lo recomendamos.** Aunque MeCam solo deja entrar a dispositivos vinculados, abrir un puerto deja tu computadora expuesta a todo internet. Usa una VPN (ver pregunta anterior).
 
 ### ¿Puedo ver las cámaras desde otro celular estando en casa?
 
-Sí. Conecta ese celular al mismo Wi-Fi, abre Chrome y entra a `https://IP-DE-LA-COMPUTADORA:8443/ver`. La dirección aparece en la ventana de MeCam, en el recuadro **Centro de control**.
+Sí. Si ya vinculaste algún dispositivo, primero vincula este (mira «¿Cómo vinculo otro aparato para ver las cámaras?»). Después, con el celular en el mismo Wi-Fi, abre Chrome y entra a `https://IP-DE-LA-COMPUTADORA:8443/ver`. La dirección aparece en la ventana de MeCam, en el recuadro **Centro de control**.
 
 ### ¿Los celulares cámara pueden transmitir desde otra red o con datos móviles?
 
@@ -74,6 +75,56 @@ El servidor lo detecta en unos 20 segundos y lo desconecta: su ficha desaparece 
 
 ---
 
+## Vincular dispositivos (QR)
+
+### ¿Qué es vincular y por qué hace falta?
+
+Vincular es "presentar" un celular a tu computadora. En la ventana de MeCam haces clic en **Vincular dispositivo**, aparece un QR, lo escaneas y listo: no hay que escribir IP ni contraseñas. Desde que vinculas el primero, el servidor solo acepta dispositivos vinculados, así nadie más de tu Wi-Fi puede conectar una cámara ni ver el centro de control.
+
+### ¿Cómo vinculo un celular cámara?
+
+1. En la ventana de MeCam de la computadora, haz clic en **Vincular dispositivo**. Aparece un QR.
+2. En el celular abre **MeCam** y toca **Escanear QR para vincular**. Toca **Permitir** si pide permiso de cámara.
+3. Apunta la cámara del celular al QR. Cuando aparezca «¡Listo! Vinculada como «Cámara 1»», toca **Iniciar cámara**.
+
+El nombre lo asigna el servidor («Cámara 1», «Cámara 2»…). Puedes cambiarlo con **Renombrar** en la ventana de MeCam.
+
+### ¿Cómo vinculo otro aparato para ver las cámaras?
+
+1. En la computadora haz clic en **Vincular dispositivo**.
+2. Con la **cámara normal** del celular (o de la tablet) escanea el QR y abre el enlace que aparece.
+3. Saldrá el aviso «Tu conexión no es privada»: toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**. Se abre el centro de control, ya vinculado. La próxima vez basta con entrar a la dirección de siempre.
+
+El aparato debe estar en el mismo Wi-Fi que la computadora al vincularlo.
+
+### ¿Cada QR es distinto? ¿Se puede reutilizar?
+
+Cada QR es distinto y **sirve una sola vez**; además vence a los 5 minutos. Cuando se usa, la ventana muestra uno nuevo para el siguiente dispositivo. Una foto de un QR ya usado no sirve para nada.
+
+### ¿Qué pasa cuando vinculo el primer dispositivo?
+
+MeCam pasa de **Abierto** a **Protegido**: solo entran los dispositivos vinculados. **Vincula todas tus cámaras y visores**, porque los que no estén vinculados dejarán de conectar. La ventana de MeCam te avisa qué cámaras conectadas siguen sin vincular.
+
+### ¿Cómo desvinculo un dispositivo (por ejemplo, si pierdo un celular)?
+
+En la ventana de MeCam elige el dispositivo en la lista y haz clic en **Desvincular**. Se corta al instante y no puede volver a conectarse sin un QR nuevo.
+
+### ¿Hace falta vincular si veo las cámaras por Tailscale?
+
+No. Si Tailscale está instalado y conectado en la computadora, MeCam deja entrar a los aparatos de tu red Tailscale sin vincularlos, porque Tailscale ya los autentica. Eso incluye a quien tú hayas invitado a tu red. Tampoco hace falta vincular cuando abres el centro de control en la propia computadora.
+
+### ¿La conexión de las cámaras está cifrada?
+
+Sí. Las cámaras vinculadas se conectan por HTTPS y solo confían en el certificado de tu computadora, cuya huella viaja dentro del QR. Así nadie más en tu Wi-Fi puede hacerse pasar por tu computadora.
+
+### ¿Dónde se guardan los dispositivos vinculados?
+
+En la carpeta `MeCam` dentro de `%APPDATA%` (escribe `%APPDATA%` en la barra de direcciones del Explorador de archivos y pulsa **Enter**). Ahí están la lista y el certificado, y se conservan al actualizar MeCam. **Si borras esa carpeta, hay que vincular todo de nuevo.**
+
+### ¿Puedo seguir usando la IP manual?
+
+Sí, en la app: **Ajustes** y luego **Conexión manual**. Solo funciona mientras MeCam está **Abierto** (sin dispositivos vinculados).
+
 ## Instalación y uso
 
 ### ¿Qué necesito para usar MeCam?
@@ -88,7 +139,7 @@ El servidor lo detecta en unos 20 segundos y lo desconecta: su ficha desaparece 
 2. Toca **MeCam.apk**. Si Chrome avisa que el archivo puede dañar el dispositivo, toca **Descargar de todos modos**.
 3. Toca **Abrir** y luego **Instalar**. Si el celular pide permiso para instalar apps de origen desconocido, toca **Ajustes**, activa **Permitir de esta fuente**, vuelve atrás y toca **Instalar**.
 4. Si Play Protect avisa, toca **Más detalles** y luego **Instalar de todos modos**.
-5. Abre **MeCam**, escribe la IP de la computadora, un nombre para la cámara y toca **Iniciar cámara**. Toca **Permitir** en los permisos.
+5. Abre **MeCam** y toca **Escanear QR para vincular** (el QR aparece en la ventana de MeCam de la computadora: mira «¿Cómo vinculo un celular cámara?»). Después toca **Iniciar cámara** y **Permitir** en los permisos.
 
 ### ¿Cómo instalo y ejecuto el servidor en la computadora?
 
@@ -183,7 +234,7 @@ No. El video viaja de tu celular a **tu computadora**, dentro de tu red. MeCam n
 
 ### ¿Cualquiera puede ver mis cámaras?
 
-Cualquier persona **dentro de tu Wi-Fi** que conozca la dirección `https://IP-DE-LA-COMPUTADORA:8443/ver` puede verlas: **MeCam todavía no pide usuario ni contraseña**. Por eso no abras puertos en el router y usa una VPN para verlas desde fuera. Una contraseña está en la lista de mejoras.
+Cuando vinculas el primer dispositivo, MeCam se **protege**: solo entran los dispositivos vinculados con un QR, esta computadora y, si tienes Tailscale en ella, los aparatos de tu red Tailscale. Mientras no hayas vinculado nada, la ventana de MeCam muestra **Abierto** y cualquier persona dentro de tu Wi-Fi que conozca la dirección podría ver las cámaras. Por eso vincula tus dispositivos y no abras puertos en el router.
 
 ### ¿Por qué el navegador dice "Tu conexión no es privada"?
 
@@ -224,9 +275,10 @@ Se instaló una versión de NumPy incompatible con YOLO. Ejecuta `python -m pip 
 
 La app no logra hablar con el servidor. Revisa en orden:
 1. El servidor está en marcha (la ventana de MeCam dice **En marcha**).
-2. La **IP** escrita en la app es la que muestra la ventana de MeCam.
+2. Si la vinculaste con QR, la app se conecta sola. Si usas la conexión manual, la IP escrita es la que muestra la ventana de MeCam (y solo funciona mientras MeCam está **Abierto**).
 3. El firewall permite el puerto **8080** (ver "timed out").
 4. El celular y la computadora están en el **mismo Wi-Fi**.
+5. Si la notificación dice «ya no está vinculada» o «no se pudo verificar la computadora», vuelve a escanear un QR nuevo.
 
 ### La página `/ver` no muestra ninguna cámara
 
@@ -234,7 +286,7 @@ Ves el mensaje "Esperando cámaras…": ningún celular está conectado. Mira la
 
 ### La IP de la computadora cambió y ya no conecta
 
-El router puede darle otra IP a la computadora cuando se reinicia. Para que no cambie, entra a la configuración de tu router y busca **Reserva DHCP**, **IP estática** o **Asignación de direcciones**. Asigna una IP fija a la computadora. Después escribe esa IP en la app.
+El router puede darle otra IP a la computadora cuando se reinicia. Para que no cambie, entra a la configuración de tu router y busca **Reserva DHCP**, **IP estática** o **Asignación de direcciones**. Asigna una IP fija a la computadora. Después, si la cámara está vinculada, escanea un QR nuevo (la vinculación recuerda la IP anterior) y quita la cámara vieja de la lista con **Desvincular**. Si usas la conexión manual, escribe la IP nueva en la app.
 
 ### La imagen sale de lado o al revés
 
@@ -254,7 +306,7 @@ Casi seguro el sistema cerró la app para ahorrar batería. Repite el paso de **
 
 ### La ventana de MeCam no se abre
 
-Abre la carpeta `servidor`: si hay un archivo `mecam_error.log`, contiene el motivo. Si la ventana se abre pero el servidor no arranca, mira el recuadro **Detalles** o el archivo `mecam.log`. Si falta algo por instalar, borra el archivo `.instalado` de la carpeta y vuelve a abrir **Iniciar MeCam.bat**.
+Abre la carpeta `servidor`: si hay un archivo `mecam_error.log`, contiene el motivo. Si la ventana se abre pero el servidor no arranca, mira el recuadro **Detalles** o el archivo `mecam.log`. Si falta algo por instalar, borra el archivo `.instalado-v2` de la carpeta y vuelve a abrir **Iniciar MeCam.bat**.
 
 ### Al hacer clic en "Iniciar servidor" dice que los puertos están en uso
 

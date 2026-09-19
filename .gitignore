@@ -9,6 +9,6 @@ clave.pem
 __pycache__/
 
 # MeCam (servidor)
-.instalado
+.instalado*
 mecam.log
 mecam_error.log
