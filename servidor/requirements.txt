@@ -2,3 +2,4 @@ ultralytics
 aiohttp
 cryptography
 numpy<2
+qrcode

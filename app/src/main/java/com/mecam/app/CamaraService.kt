@@ -71,6 +71,11 @@ class CamaraService : LifecycleService() {
     private var detenido = false
     private var idDisp = ""
     @Volatile private var nombreVisible = ""
+    private var seguro = false          // vinculada por QR: conexión cifrada y con credencial propia
+    private var host = ""
+    private var puertoSeguro = 8443
+    private var huella = ""
+    private var credencial = ""
 
     @Volatile private var conectado = false
     @Volatile private var esperando = false
@@ -84,6 +89,13 @@ class CamaraService : LifecycleService() {
         ip = intent?.getStringExtra("ip") ?: prefs.getString("ip", "") ?: ""
         nombre = intent?.getStringExtra("nombre") ?: prefs.getString("nombre", "celular1") ?: "celular1"
         nombreVisible = nombre
+        host = prefs.getString("v_host", "") ?: ""
+        puertoSeguro = prefs.getInt("v_puerto", 8443)
+        huella = prefs.getString("v_huella", "") ?: ""
+        val secreto = prefs.getString("v_secreto", "") ?: ""
+        credencial = (prefs.getString("v_id", "") ?: "") + "." + secreto
+        seguro = host.isNotEmpty() && huella.isNotEmpty() && secreto.isNotEmpty()
+        if (seguro) nombreVisible = prefs.getString("v_nombre", nombre) ?: nombre
         // Identificador propio de este celular: el servidor lo usa para reconocerlo al reconectar
         idDisp = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
             prefs.edit().putString("id", it).apply()
@@ -109,7 +121,8 @@ class CamaraService : LifecycleService() {
         }
 
         if (cliente == null) {
-            cliente = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
+            val constructor = if (seguro) Vinculo.clienteFijado(huella) else OkHttpClient.Builder()
+            cliente = constructor.pingInterval(20, TimeUnit.SECONDS).build()
             conectar()
             iniciarSensorGiro()
             iniciarCamara()
@@ -122,7 +135,14 @@ class CamaraService : LifecycleService() {
     // ------------------------------------------------------------ Conexión
     private fun conectar() {
         if (detenido) return
-        val pedido = Request.Builder().url("ws://$ip:$PUERTO/ws/${Uri.encode(nombre)}?id=$idDisp").build()
+        val pedido = if (seguro) {
+            Request.Builder()
+                .url("wss://$host:$puertoSeguro/ws/${Uri.encode(nombre)}?id=$idDisp")
+                .header("Authorization", "Bearer $credencial")
+                .build()
+        } else {
+            Request.Builder().url("ws://$ip:$PUERTO/ws/${Uri.encode(nombre)}?id=$idDisp").build()
+        }
         ws = cliente!!.newWebSocket(pedido, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 conectado = true
@@ -149,17 +169,23 @@ class CamaraService : LifecycleService() {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                perdida()
+                when {
+                    response?.code == 401 ->
+                        perdida("Esta cámara ya no está vinculada. Escanea un QR nuevo en MeCam.", true)
+                    t is javax.net.ssl.SSLException ->
+                        perdida("No se pudo verificar la computadora. Vuelve a escanear su QR.", true)
+                    else -> perdida()
+                }
             }
         })
     }
 
-    private fun perdida() {
+    private fun perdida(motivo: String? = null, lento: Boolean = false) {
         conectado = false
         esperando = false
         if (detenido) return
-        actualizarNotificacion("Reconectando...")
-        principal.postDelayed({ conectar() }, 3000)
+        actualizarNotificacion(motivo ?: "Reconectando...")
+        principal.postDelayed({ conectar() }, if (lento) 30_000L else 3000L)
     }
 
     // ------------------------------------------------------------ Cámara

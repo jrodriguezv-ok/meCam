@@ -24,6 +24,8 @@ import numpy as np
 from aiohttp import web
 from ultralytics import YOLO
 
+import vinculos
+
 PORT = 8443        # navegador (HTTPS)
 PORT_HTTP = 8080   # app de Android (sin certificado)
 MODELO = "yolo11n.pt"
@@ -50,6 +52,7 @@ _id_evento = itertools.count(1)
 _id_cuadro = itertools.count(1)
 IP_LOCAL = "127.0.0.1"
 parando = False             # True mientras el servidor se está deteniendo
+registro = vinculos.Registro()   # dispositivos vinculados por QR
 
 
 class Camara:
@@ -908,6 +911,87 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 """
 
 
+# ---------------------------------------------------------------- Vinculación por QR
+_ESTILO = ("body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+           "background:#0a0e13;color:#e8eef6;font-family:system-ui,sans-serif;text-align:center}"
+           "div{max-width:420px;padding:24px}h1{font-size:22px}p{color:#8fa3bb;line-height:1.5}")
+
+
+def _pagina_simple(titulo, texto):
+    return ("<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"utf-8\">"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>MeCam</title>"
+            f"<style>{_ESTILO}</style></head><body><div><h1>{titulo}</h1><p>{texto}</p></div></body></html>")
+
+
+PAGINA_SIN_VINCULO = _pagina_simple(
+    "Este dispositivo no está vinculado",
+    "En la computadora abre <b>MeCam</b>, toca <b>Vincular dispositivo</b> y escanea el QR "
+    "con la cámara de este celular.")
+PAGINA_CODIGO_USADO = _pagina_simple(
+    "Este código ya no sirve",
+    "Cada QR se puede usar una sola vez y vence a los pocos minutos. "
+    "En la computadora toca <b>Vincular dispositivo</b> para generar uno nuevo.")
+
+
+@web.middleware
+async def autorizar(request, handler):
+    """Cuando hay dispositivos vinculados, solo entran ellos (y esta computadora / tu red Tailscale)."""
+    ruta = request.path
+    if ruta.startswith("/v/") or ruta == "/api/vincular":
+        return await handler(request)          # validan su propio código de un solo uso
+    if not registro.proteccion:
+        return await handler(request)          # todavía no hay nada vinculado: acceso abierto, como antes
+    if vinculos.es_confiable(request.remote):
+        return await handler(request)
+    disp = registro.verificar(vinculos.credencial(request)) if request.secure else None
+    if disp is not None:
+        request["disp"] = disp
+        return await handler(request)
+    if ruta.startswith("/ws/") or request.method != "GET":
+        raise web.HTTPUnauthorized(text="dispositivo no vinculado")
+    return web.Response(status=403, text=PAGINA_SIN_VINCULO, content_type="text/html")
+
+
+async def api_vincular(request):
+    """La app MeCam canjea aquí el código del QR y recibe su credencial propia."""
+    if not request.secure:
+        raise web.HTTPForbidden(text="usa HTTPS")
+    try:
+        datos = await request.json()
+    except Exception:
+        raise web.HTTPBadRequest()
+    if not registro.canjear_token(str(datos.get("token", ""))):
+        await asyncio.sleep(1)
+        raise web.HTTPForbidden(text="codigo invalido o vencido")
+    disp_id, secreto, nombre = registro.vincular("camara", str(datos.get("modelo", "")))
+    evento(f"{nombre}: cámara vinculada")
+    print(f"[*] Dispositivo vinculado: {nombre} (cámara)")
+    return web.json_response({"id": disp_id, "secreto": secreto, "nombre": nombre})
+
+
+async def vinculo_navegador(request):
+    """Quien escanea el QR con la cámara del celular llega aquí y queda vinculado como visor."""
+    if not request.secure:
+        raise web.HTTPFound(f"https://{request.url.host}:{PORT}{request.path_qs}")
+    if not registro.canjear_token(request.match_info["token"]):
+        await asyncio.sleep(1)
+        return web.Response(status=410, text=PAGINA_CODIGO_USADO, content_type="text/html")
+    disp_id, secreto, nombre = registro.vincular("visor", request.headers.get("User-Agent", ""))
+    evento(f"{nombre}: visor vinculado")
+    print(f"[*] Dispositivo vinculado: {nombre} (visor)")
+    resp = web.HTTPFound("/ver")
+    resp.set_cookie("mecam", f"{disp_id}.{secreto}", max_age=10 * 365 * 24 * 3600,
+                    secure=True, httponly=True, samesite="Lax", path="/")
+    raise resp
+
+
+async def refresco_tailscale():
+    loop = asyncio.get_running_loop()
+    while True:
+        await loop.run_in_executor(None, vinculos.refrescar_tailscale)
+        await asyncio.sleep(60)
+
+
 # ---------------------------------------------------------------- Procesamiento
 def procesar(model, datos):
     """Recibe un JPEG, detecta y sigue objetos. Devuelve (JPEG con recuadros, conteo, resolución)."""
@@ -1015,6 +1099,9 @@ async def stream(request):
 async def ws_camara(request):
     pedido = limpiar_nombre(request.match_info["cam"])
     disp_id = request.query.get("id", "")[:64]
+    disp = request.get("disp")
+    if disp is not None and disp["tipo"] == "camara":
+        pedido, disp_id = limpiar_nombre(disp["nombre"]), disp["id"]   # nombre e identidad los decide el servidor
     # heartbeat: si un celular se apaga o pierde el Wi-Fi, se detecta y se desconecta solo
     ws = web.WebSocketResponse(max_msg_size=10 * 1024 * 1024, heartbeat=15)
     await ws.prepare(request)
@@ -1078,53 +1165,15 @@ def ip_local():
         s.close()
 
 
-def crear_certificado(ip):
-    """El navegador del celular exige HTTPS para dar acceso a la cámara. Creamos un certificado propio."""
-    from cryptography import x509
-    from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.x509.oid import NameOID
-
-    clave = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    nombre = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, ip)])
-    ahora = datetime.datetime.now(datetime.timezone.utc)
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(nombre)
-        .issuer_name(nombre)
-        .public_key(clave.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(ahora - datetime.timedelta(days=1))
-        .not_valid_after(ahora + datetime.timedelta(days=365))
-        .add_extension(
-            x509.SubjectAlternativeName([
-                x509.IPAddress(ipaddress.ip_address(ip)),
-                x509.DNSName("localhost"),
-            ]),
-            critical=False,
-        )
-        .sign(clave, hashes.SHA256())
-    )
-    ruta_cert = os.path.join(BASE, "certificado.pem")
-    ruta_clave = os.path.join(BASE, "clave.pem")
-    with open(ruta_cert, "wb") as f:
-        f.write(cert.public_bytes(serialization.Encoding.PEM))
-    with open(ruta_clave, "wb") as f:
-        f.write(clave.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.TraditionalOpenSSL,
-            serialization.NoEncryption(),
-        ))
-    return ruta_cert, ruta_clave
-
-
 async def iniciar(ctx, ip, parar=None, al_arrancar=None):
     """Levanta el servidor. Sin 'parar' corre hasta Ctrl+C; con 'parar' termina cuando se activa."""
     global IP_LOCAL, parando
     IP_LOCAL = ip
     parando = False
-    app = web.Application()
+    app = web.Application(middlewares=[autorizar])
     app.add_routes([
+        web.get("/v/{token}", vinculo_navegador),
+        web.post("/api/vincular", api_vincular),
         web.get("/", pagina_camara),
         web.get("/ver", pagina_ver),
         web.get("/estado", estado),
@@ -1134,14 +1183,16 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
     ])
     runner = web.AppRunner(app)
     await runner.setup()
+    tarea_ts = None
     try:
+        tarea_ts = asyncio.create_task(refresco_tailscale())
         await web.TCPSite(runner, "0.0.0.0", PORT, ssl_context=ctx).start()
         await web.TCPSite(runner, "0.0.0.0", PORT_HTTP).start()
         print("=" * 50)
         print("MeCam")
-        print(f"En el CELULAR (navegador): https://{ip}:{PORT}")
-        print(f"En la APP de Android, IP:  {ip}")
         print(f"Centro de control:         https://localhost:{PORT}/ver")
+        print(f"IP de esta computadora:    {ip}")
+        print("Para vincular un celular usa el boton 'Vincular dispositivo' de la ventana de MeCam.")
         print("=" * 50)
         if al_arrancar:
             al_arrancar()
@@ -1151,6 +1202,8 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
         else:
             await parar.wait()
     finally:
+        if tarea_ts is not None:
+            tarea_ts.cancel()
         parando = True
         for c in list(camaras.values()):
             await c.cerrar()
@@ -1171,7 +1224,21 @@ class Servidor:
         self.listo = threading.Event()
         self.error = None
         self.ip = ""
+        self.huella = ""
         self.corriendo = False
+
+    def nuevo_qr(self):
+        """Código de un solo uso y la dirección que va dentro del QR."""
+        token = registro.nuevo_token()
+        return token, f"https://{self.ip}:{PORT}/v/{token}#fp={self.huella}"
+
+    def desvincular(self, disp_id):
+        """Quita el dispositivo y corta su conexión si estaba transmitiendo."""
+        registro.desvincular(disp_id)
+        if self.loop is not None:
+            for c in list(camaras.values()):
+                if c.id == disp_id:
+                    asyncio.run_coroutine_threadsafe(c.cerrar(), self.loop)
 
     def iniciar(self):
         """Arranca el servidor. Devuelve True si quedó funcionando."""
@@ -1210,7 +1277,7 @@ class Servidor:
         self.ip = ip_local()
         print("Cargando el modelo de detección (la primera vez se descarga y puede tardar)...")
         await self.loop.run_in_executor(None, YOLO, MODELO)
-        ruta_cert, ruta_clave = crear_certificado(self.ip)
+        ruta_cert, ruta_clave, self.huella = vinculos.asegurar_certificado(self.ip)
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ctx.load_cert_chain(ruta_cert, ruta_clave)
 
@@ -1223,7 +1290,7 @@ class Servidor:
 
 def main():
     ip = ip_local()
-    ruta_cert, ruta_clave = crear_certificado(ip)
+    ruta_cert, ruta_clave, _ = vinculos.asegurar_certificado(ip)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(ruta_cert, ruta_clave)
     try:
