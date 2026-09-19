@@ -7,7 +7,8 @@ Convierte celulares Android viejos en cámaras de seguridad con detección de pe
 ## Cómo funciona
 
 1. **App MeCam (Android):** corre en segundo plano (con la pantalla apagada) y transmite video de forma constante a la computadora. Si el celular se calienta, baja la velocidad y, si sigue subiendo, se pausa hasta que se enfríe. Detecta si el celular está vertical u horizontal y adapta la imagen.
-2. **Servidor (computadora):** recibe el video, detecta y sigue personas y autos con YOLO, y los muestra en una página web.
+2. **Servidor (computadora):** recibe el video, detecta y sigue personas y autos con YOLO, y los muestra en un centro de control web con todas las cámaras.
+3. **Vinculación por QR:** para conectar un celular (o un aparato que solo quiera ver las cámaras) se escanea un QR que muestra la ventana de MeCam. Cada QR es distinto y sirve una sola vez, cada dispositivo recibe su propia credencial y las cámaras se conectan cifradas.
 
 El video no sale de tu red: no se sube a ningún servidor de terceros.
 
@@ -30,6 +31,8 @@ La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android 
 La ventana abre el centro de control (`https://localhost:8443/ver`) y muestra la lista de dispositivos vinculados. La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, usa el botón **Abrir puertos del firewall** (una sola vez) o revisa las [preguntas frecuentes](FAQ.md).
 
 Si prefieres la terminal: `cd servidor`, `python -m pip install -r requirements.txt` y `python servidor.py`.
+
+Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCam.bat** de la carpeta nueva: los dispositivos vinculados se guardan en `%APPDATA%\MeCam` y se conservan.
 
 ## Estado del proyecto
 

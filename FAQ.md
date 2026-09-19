@@ -67,7 +67,7 @@ Cuando aparece una persona, la ficha de esa cámara se ilumina en rojo. Tus pref
 
 ### ¿Qué pasa si dos celulares usan el mismo nombre?
 
-Ya no se pisan. Si el nombre está en uso por otro celular, MeCam le agrega un número al segundo (por ejemplo `celular1-2`). La app muestra el nombre que recibió en su notificación, y el visor lo indica. Si es el **mismo celular** que se reconecta, conserva su nombre.
+Ya no se pisan. Con los celulares **vinculados por QR** el problema no existe: el servidor le da a cada uno su propio nombre («Cámara 1», «Cámara 2»…) y puedes cambiarlo con **Renombrar** en la ventana de MeCam. Solo con la conexión manual puede repetirse: entonces MeCam le agrega un número al segundo (por ejemplo `celular1-2`). Si es el **mismo celular** que se reconecta, conserva su nombre.
 
 ### ¿Qué pasa cuando un celular se apaga o pierde el Wi-Fi?
 
@@ -113,6 +113,8 @@ En la ventana de MeCam elige el dispositivo en la lista y haz clic en **Desvincu
 
 No. Si Tailscale está instalado y conectado en la computadora, MeCam deja entrar a los aparatos de tu red Tailscale sin vincularlos, porque Tailscale ya los autentica. Eso incluye a quien tú hayas invitado a tu red. Tampoco hace falta vincular cuando abres el centro de control en la propia computadora.
 
+MeCam detecta Tailscale al iniciar y cada minuto, usando el programa `tailscale` de la computadora. Si por Tailscale ves «Este dispositivo no está vinculado», MeCam no lo detectó: reinicia MeCam y, si sigue igual, abre un **Issue** en este repositorio.
+
 ### ¿La conexión de las cámaras está cifrada?
 
 Sí. Las cámaras vinculadas se conectan por HTTPS y solo confían en el certificado de tu computadora, cuya huella viaja dentro del QR. Así nadie más en tu Wi-Fi puede hacerse pasar por tu computadora.
@@ -150,7 +152,7 @@ Sí, en la app: **Ajustes** y luego **Conexión manual**. Solo funciona mientras
 5. La primera vez se instala lo necesario en una ventana negra. Tarda varios minutos y no hay que cerrarla. Al terminar se abre la ventana de MeCam.
 6. En la ventana de MeCam haz clic en el botón verde **Iniciar servidor**. La primera vez descarga el modelo de detección y tarda un poco más.
 7. Haz clic en **Abrir puertos del firewall (una sola vez)** y, cuando Windows pregunte, haz clic en **Sí**. Solo hace falta la primera vez.
-8. La ventana muestra la **IP** que hay que escribir en la app de los celulares y abre el centro de control en el navegador.
+8. Se abre el centro de control en el navegador. Para conectar tus celulares, haz clic en **Vincular dispositivo** y sigue «¿Cómo vinculo un celular cámara?».
 
 Deja la ventana de MeCam abierta (puedes minimizarla): al cerrarla se apagan las cámaras. Si prefieres la terminal, dentro de la carpeta `servidor` ejecuta `python servidor.py`.
 
@@ -162,9 +164,17 @@ Android **no permite** instalar sin que la persona lo autorice, así que siempre
 
 Si tu versión es anterior a la 5, desinstala la app y vuelve a instalarla una vez.
 
+### ¿Cómo actualizo el servidor en la computadora?
+
+1. En la ventana de MeCam haz clic en **Detener servidor** y cierra la ventana.
+2. Descarga el proyecto de nuevo (en la página del repositorio, **Code** y luego **Download ZIP**) o el archivo `MeCam-servidor.zip` si te lo pasaron. Haz clic derecho, **Extraer todo…** y **Extraer**.
+3. En la carpeta nueva, dentro de **servidor**, haz doble clic en **Iniciar MeCam.bat**.
+
+Tus dispositivos vinculados y el certificado se guardan aparte, en `%APPDATA%\MeCam`, así que **no hay que vincular nada de nuevo**. Cuando todo funcione puedes borrar la carpeta vieja. Cada versión nueva de la app llega sola, con el aviso de actualización.
+
 ### ¿Puedo conectar varios celulares?
 
-Sí. Cada celular necesita un **nombre distinto** en el campo "Nombre de esta cámara" (`celular1`, `celular2`, …). Si dos usan el mismo nombre, MeCam le agrega un número al segundo (por ejemplo `celular1-2`) para que no se pisen; aun así, conviene ponerles nombres distintos para reconocerlos.
+Sí. Vincula cada celular con un QR distinto (mira «¿Cómo vinculo un celular cámara?»): cada uno recibe automáticamente su propio nombre («Cámara 1», «Cámara 2»…) y puedes cambiarlo con **Renombrar** en la ventana de MeCam. Solo si usas la conexión manual hay que ponerle un nombre distinto a cada celular en **Ajustes**.
 
 Cada cámara hace trabajar más a la computadora. Si ves retraso, baja los **cuadros por segundo** de cada celular (5 o 6 suele bastar) o usa menos cámaras.
 
@@ -238,7 +248,7 @@ Cuando vinculas el primer dispositivo, MeCam se **protege**: solo entran los dis
 
 ### ¿Por qué el navegador dice "Tu conexión no es privada"?
 
-Porque el servidor crea su propio certificado en tu computadora, y los navegadores solo confían en certificados emitidos por entidades conocidas. En tu propia red es seguro continuar: toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**.
+Porque MeCam crea su propio certificado en tu computadora (una sola vez, y lo guarda), y los navegadores solo confían en certificados emitidos por entidades conocidas. En tu propia red es seguro continuar: toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**. Cada navegador lo pregunta una vez; no vuelve a aparecer salvo que borres la carpeta `%APPDATA%\MeCam` o cambie la IP de la computadora.
 
 ### ¿Es legal grabar con MeCam?
 
@@ -295,6 +305,14 @@ En MeCam cambia el selector **Orientación** a **vertical**, **horizontal (izqui
 ### La app dice que no pudo abrir la cámara
 
 Otra app está usando la cámara. Ciérrala, cierra MeCam y vuelve a abrirla. Si sigue, reinicia el celular.
+
+### Al escanear el QR, la app muestra un error
+
+- **«Ese QR no es de MeCam»:** escaneaste otro código. Usa el que muestra la ventana **Vincular dispositivo** de MeCam en la computadora.
+- **«Ese QR ya se usó o venció»:** cada QR sirve una sola vez y dura 5 minutos. La ventana muestra uno nuevo automáticamente; escanea el que se ve en ese momento.
+- **«No se pudo verificar la computadora»:** escaneaste un QR que ya no corresponde a esta computadora. Escanea el más reciente y comprueba que no haya dos ventanas de MeCam abiertas.
+- **«No se pudo conectar»:** el celular y la computadora deben estar en el **mismo Wi-Fi**, con el servidor en marcha, y el firewall debe permitir el puerto **8443** (botón **Abrir puertos del firewall** de la ventana de MeCam).
+- **El escáner no abre la cámara:** en la app toca **Permitir** cuando pida el permiso de cámara. Si lo negaste, actívalo en **Ajustes**, **Aplicaciones**, **MeCam**, **Permisos**.
 
 ### La app no se instala o dice que hay un conflicto con la versión instalada
 
