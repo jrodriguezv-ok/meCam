@@ -8,10 +8,12 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -24,20 +26,22 @@ class MainActivity : ComponentActivity() {
     private lateinit var campoNombre: EditText
     private lateinit var campoFps: EditText
     private lateinit var campoOrientacion: Spinner
+    private lateinit var botonActualizar: Button
     private lateinit var estado: TextView
 
     private val pedirPermisos = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
-        val camaraOk = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-        if (camaraOk) {
+        if (tieneCamara()) {
             iniciarServicio()
         } else {
             estado.text = "Falta el permiso de cámara. Toca Iniciar y elige Permitir."
         }
     }
+
+    private fun tieneCamara() = ContextCompat.checkSelfPermission(
+        this, Manifest.permission.CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +53,12 @@ class MainActivity : ComponentActivity() {
             setPadding(pad, pad, pad, pad)
         }
         val titulo = TextView(this).apply {
-            text = "MeCam"
+            text = "MeCam (versión ${Actualizador.versionInstalada(this@MainActivity)})"
             textSize = 28f
+        }
+        botonActualizar = Button(this).apply {
+            visibility = View.GONE
+            setOnClickListener { actualizar() }
         }
         campoIp = EditText(this).apply {
             hint = "IP de la computadora (ej: 192.168.1.128)"
@@ -86,6 +94,7 @@ class MainActivity : ComponentActivity() {
             text = "Detener"
             setOnClickListener {
                 stopService(Intent(this@MainActivity, CamaraService::class.java))
+                prefs.edit().putBoolean("activo", false).apply()
                 estado.text = "Detenida."
             }
         }
@@ -100,9 +109,43 @@ class MainActivity : ComponentActivity() {
             setPadding(0, pad, 0, 0)
         }
 
-        listOf(titulo, campoIp, campoNombre, campoFps, campoOrientacion, botonIniciar, botonDetener, botonBateria, estado)
-            .forEach { raiz.addView(it) }
-        setContentView(raiz)
+        listOf(
+            titulo, botonActualizar, campoIp, campoNombre, campoFps, campoOrientacion,
+            botonIniciar, botonDetener, botonBateria, estado
+        ).forEach { raiz.addView(it) }
+        setContentView(ScrollView(this).apply { addView(raiz) })
+
+        revisarActualizacion()
+
+        // Si la cámara estaba encendida (por ejemplo antes de actualizar), se reanuda al abrir la app
+        if (prefs.getBoolean("activo", false) && tieneCamara() &&
+            campoIp.text.toString().trim().isNotEmpty()
+        ) {
+            iniciarServicio()
+        }
+    }
+
+    private fun revisarActualizacion() {
+        Thread {
+            val ultima = Actualizador.ultimaVersion()
+            val actual = Actualizador.versionInstalada(this)
+            if (ultima != null && ultima > actual) {
+                runOnUiThread {
+                    botonActualizar.text = "Actualizar MeCam a la versión $ultima"
+                    botonActualizar.visibility = View.VISIBLE
+                }
+            }
+        }.start()
+    }
+
+    private fun actualizar() {
+        estado.text = "Descargando la versión nueva..."
+        Thread {
+            val error = Actualizador.descargarEInstalar(this)
+            runOnUiThread {
+                estado.text = error ?: "Confirma la instalación en la ventana que aparece."
+            }
+        }.start()
     }
 
     private fun pedir() {
@@ -125,6 +168,7 @@ class MainActivity : ComponentActivity() {
             .putString("nombre", nombre)
             .putInt("fps", fps)
             .putInt("orientacion", orientacion)
+            .putBoolean("activo", true)
             .apply()
         val intent = Intent(this, CamaraService::class.java)
             .putExtra("ip", ip)

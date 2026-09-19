@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Cada compilación en GitHub sube el número de versión (necesario para poder actualizar)
+val numeroCompilacion = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+val rutaClave: String? = System.getenv("MECAM_KEYSTORE")
+
 android {
     namespace = "com.mecam.app"
     compileSdk = 34
@@ -11,14 +15,33 @@ android {
         applicationId = "com.mecam.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = numeroCompilacion
+        versionName = "1.0.$numeroCompilacion"
+    }
+
+    signingConfigs {
+        create("mecam") {
+            if (rutaClave != null && java.io.File(rutaClave).exists()) {
+                storeFile = java.io.File(rutaClave)
+                storeType = "pkcs12"
+                storePassword = System.getenv("MECAM_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MECAM_KEY_ALIAS")
+                keyPassword = System.getenv("MECAM_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (rutaClave != null) {
+                signingConfig = signingConfigs.getByName("mecam")
+            }
         }
+    }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

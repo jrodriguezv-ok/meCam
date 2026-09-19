@@ -3,6 +3,7 @@ package com.mecam.app
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -44,6 +45,7 @@ class CamaraService : LifecycleService() {
 
     companion object {
         const val CANAL = "mecam"
+        const val CANAL_AVISOS = "mecam_avisos"
         const val PUERTO = 8080        // puerto sin certificado del servidor
         const val TEMP_BAJAR = 40f     // a esta temperatura baja a pocos cuadros por segundo
         const val TEMP_MAX = 42f       // a esta temperatura pausa la cámara
@@ -104,6 +106,7 @@ class CamaraService : LifecycleService() {
             iniciarSensorGiro()
             iniciarCamara()
             vigilarTemperatura()
+            revisarActualizaciones()
         }
         return START_NOT_STICKY
     }
@@ -257,12 +260,47 @@ class CamaraService : LifecycleService() {
         principal.post(tarea)
     }
 
+    // ------------------------------------------------------------ Actualizaciones
+    private fun revisarActualizaciones() {
+        val tarea = object : Runnable {
+            override fun run() {
+                if (detenido) return
+                Thread {
+                    val ultima = Actualizador.ultimaVersion()
+                    if (ultima != null && ultima > Actualizador.versionInstalada(this@CamaraService)) {
+                        avisarActualizacion(ultima)
+                    }
+                }.start()
+                principal.postDelayed(this, 6 * 60 * 60 * 1000L)
+            }
+        }
+        principal.postDelayed(tarea, 60_000)
+    }
+
+    private fun avisarActualizacion(version: Long) {
+        val abrir = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notif = NotificationCompat.Builder(this, CANAL_AVISOS)
+            .setContentTitle("MeCam: hay una versión nueva")
+            .setContentText("Toca para abrir MeCam y actualizar (versión $version)")
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setContentIntent(abrir)
+            .setAutoCancel(true)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(2, notif)
+    }
+
     // ------------------------------------------------------------ Notificación
     private fun crearCanal() {
         if (Build.VERSION.SDK_INT >= 26) {
             val m = getSystemService(NotificationManager::class.java)
             m.createNotificationChannel(
                 NotificationChannel(CANAL, "MeCam", NotificationManager.IMPORTANCE_LOW)
+            )
+            m.createNotificationChannel(
+                NotificationChannel(CANAL_AVISOS, "Avisos de MeCam", NotificationManager.IMPORTANCE_DEFAULT)
             )
         }
     }
