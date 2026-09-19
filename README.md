@@ -49,7 +49,7 @@ Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCa
 - [x] Nombres únicos por cámara y limpieza automática de cámaras desconectadas
 - [ ] Audio
 - [x] Grabación de clips cuando se detecta una persona (se borran solos los viejos)
-- [ ] Alertas por Telegram
+- [x] Centro de control con botones flotantes, íconos nuevos y atajos de teclado
 - [ ] Zonas de alerta
 - [x] Vinculación por QR: un código distinto y de un solo uso por dispositivo, con conexión cifrada
 - [ ] Detección dentro del propio celular (sin computadora)
@@ -58,3 +58,7 @@ Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCa
 
 - Cuando vinculas el primer dispositivo, MeCam se **protege**: solo entran los dispositivos vinculados con un QR (además de esta computadora y de tu red Tailscale). Mientras no hayas vinculado nada, la ventana muestra «Abierto». **No abras puertos en tu router.** Para verlas desde fuera de casa usa una VPN, como se explica en las [preguntas frecuentes](FAQ.md).
 - Grabar personas o la vía pública puede estar regulado (por ejemplo, RGPD en Europa). Úsalo solo en espacios propios y avisa a quien pueda ser grabado.
+
+## Créditos
+
+Los íconos son de [Phosphor Icons](https://phosphoricons.com) (licencia MIT). Mira [LICENCIAS.md](LICENCIAS.md).

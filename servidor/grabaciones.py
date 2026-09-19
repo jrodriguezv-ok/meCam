@@ -277,67 +277,126 @@ PAGINA = r"""<!DOCTYPE html>
 <html lang="es"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0e13">
+<meta name="theme-color" content="#0a0e14">
 <title>MeCam · Grabaciones</title>
 <style>
-:root{--bg:#0a0e13;--panel:#111823;--panel2:#182231;--borde:#22314a;--texto:#e8eef6;--suave:#8fa3bb;--acento:#4f8cff;--rojo:#ef4444}
+:root{--bg:#0a0e14;--panel:#111823;--panel2:#172131;--borde:#233047;--texto:#e8eef6;--suave:#8a9bb3;--acento:#38bdf8;--rojo:#f87171;--aviso:#fbbf24}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+body{margin:0;min-height:100vh;color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(1100px 500px at 8% -10%,#0f2438 0%,transparent 60%),var(--bg);
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 18px;border-bottom:1px solid var(--borde);
-  background:linear-gradient(180deg,#0f1622,#0a0e13);position:sticky;top:0;z-index:5}
-h1{font-size:18px;margin:0}
-h1 small{color:var(--suave);font-weight:400;font-size:13px;margin-left:8px}
+button,select,a{font:inherit;color:inherit;cursor:pointer}
+svg{width:20px;height:20px;fill:currentColor;flex:none}
+.fab{
+  position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;padding:0;
+  border:1px solid var(--borde);background:var(--panel2);color:var(--texto);text-decoration:none;
+  transition:transform .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.fab svg{width:25px;height:25px}
+.fab:hover{transform:scale(1.08);border-color:var(--acento);color:var(--acento)}
+.fab:active{transform:scale(.96)}
+.fab:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.fab.peligro:hover{border-color:var(--rojo);color:var(--rojo)}
+.fab::after{
+  content:attr(data-tip);position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;
+  background:#0b111a;border:1px solid var(--borde);color:var(--texto);padding:6px 10px;border-radius:8px;
+  font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .15s;z-index:5;
+}
+.fab:hover::after,.fab:focus-visible::after{opacity:1}
+header{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 18px;position:sticky;top:0;z-index:5;
+  background:rgba(17,24,35,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--borde);
+}
+h1{font-size:18px;margin:0;display:flex;align-items:center;gap:10px}
+h1 svg{width:28px;height:28px;color:var(--acento);filter:drop-shadow(0 0 8px rgba(56,189,248,.5))}
+h1 small{color:var(--suave);font-weight:500;font-size:13px}
 .espacio{flex:1}
-a.boton,button,select{font:inherit;font-size:14px;color:var(--texto);background:var(--panel2);border:1px solid var(--borde);
-  border-radius:10px;padding:8px 12px;cursor:pointer;text-decoration:none;display:inline-block}
-a.boton:hover,button:hover,select:hover{border-color:var(--acento)}
-button.peligro:hover{border-color:var(--rojo);color:#ffb4b4}
-main{padding:16px}
-#aviso{display:none;margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#3a2a0b;border:1px solid #6b4a0f;color:#ffd58a;font-size:14px}
+select{-webkit-appearance:none;appearance:none;color:var(--texto);border:1px solid var(--borde);border-radius:10px;padding:9px 36px 9px 12px;font-size:14px;
+  background:var(--panel2) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%238a9bb3'><path d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/></svg>") no-repeat right 11px center/15px}
+select option{background:#111823;color:var(--texto)}
+select:hover{border-color:var(--acento)}
+main{padding:16px 18px 30px}
+#aviso{display:none;margin:0 0 14px;padding:10px 14px;border-radius:12px;background:#3a2a0b;border:1px solid #6b4a0f;color:#ffd58a;font-size:14px}
 #resumen{color:var(--suave);font-size:13px;margin:0 0 14px}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-.clip{background:var(--panel);border:1px solid var(--borde);border-radius:14px;overflow:hidden;cursor:pointer}
-.clip:hover{border-color:var(--acento)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.clip{background:var(--panel);border:1px solid var(--borde);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s}
+.clip:hover{border-color:var(--acento);transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.45)}
 .mini{aspect-ratio:16/9;background:#000;position:relative}
 .mini img{width:100%;height:100%;object-fit:cover;display:block}
-.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.72);padding:2px 7px;border-radius:6px;font-size:12px}
-.info{padding:10px 12px}.info b{display:block;font-size:14px}.info span{color:var(--suave);font-size:12px}
+.mini .play{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.28);opacity:0;transition:opacity .15s;color:#fff}
+.mini .play svg{width:56px;height:56px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))}
+.clip:hover .play{opacity:1}
+@media (hover:none){.mini .play{opacity:.85}}
+.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);padding:2px 8px;border-radius:999px;font-size:12px;font-variant-numeric:tabular-nums}
+.info{padding:11px 13px}
+.info b{display:flex;align-items:center;gap:7px;font-size:14px}
+.info b svg{width:17px;height:17px;color:var(--acento)}
+.info span{color:var(--suave);font-size:12.5px}
 #vacio{display:none;text-align:center;color:var(--suave);padding:70px 20px;line-height:1.6}
-#vacio h2{color:var(--texto);margin:0 0 6px;font-size:20px}
-#modal{position:fixed;inset:0;background:rgba(3,5,8,.96);display:none;flex-direction:column;z-index:20}
+#vacio svg{width:70px;height:70px;color:var(--acento);filter:drop-shadow(0 0 14px rgba(56,189,248,.45))}
+#vacio h2{color:var(--texto);margin:8px 0 6px;font-size:21px}
+#modal{position:fixed;inset:0;background:rgba(4,7,11,.985);display:none;flex-direction:column;z-index:20}
 #modal.abierto{display:flex}
-.cab{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top))}
+.cab{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top))}
 .cab b{font-size:16px}.cab span{color:var(--suave);font-size:13px}
-.video{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 12px 14px}
-.video img{max-width:100%;max-height:100%;border-radius:12px;background:#000}
+.cab .fab::after{top:calc(100% + 10px);left:auto;right:0;transform:none}
+.cuerpo{position:relative;flex:1;min-height:0;display:flex}
+.video{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 12px 96px}
+.video img{max-width:100%;max-height:100%;border-radius:14px;background:#000}
+.flecha{
+  position:absolute;top:calc(50% - 40px);transform:translateY(-50%);width:52px;height:52px;border-radius:50%;padding:0;
+  display:grid;place-items:center;background:rgba(17,24,35,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:var(--texto);transition:border-color .15s,color .15s;
+}
+.flecha svg{width:28px;height:28px}
+.flecha.izq{left:14px}.flecha.der{right:14px}
+.flecha:hover{border-color:var(--acento);color:var(--acento)}
+#dockM{
+  position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:10px;padding:9px 12px;border-radius:999px;
+  background:rgba(17,24,35,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 40px rgba(0,0,0,.6);
+}
+#dockM .fab::after{top:auto;bottom:calc(100% + 12px)}
+@media (max-width:700px){.flecha{width:44px;height:44px}.flecha.izq{left:6px}.flecha.der{right:6px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
+<!--SPRITE-->
 <header>
-  <h1>MeCam<small>Grabaciones</small></h1>
+  <a class="fab" href="/ver" data-i="volver" data-tip="Volver al centro de control" aria-label="Volver al centro de control"></a>
+  <h1><span data-i="grabaciones"></span>MeCam<small>Grabaciones</small></h1>
   <span class="espacio"></span>
-  <select id="filtro" title="Filtrar por cámara"><option value="">Todas las cámaras</option></select>
-  <a class="boton" href="/ver">← Centro de control</a>
+  <select id="filtro" title="Filtrar por cámara" aria-label="Filtrar por cámara"><option value="">Todas las cámaras</option></select>
 </header>
 <main>
   <p id="aviso"></p>
   <p id="resumen"></p>
   <div class="grid" id="grid"></div>
-  <div id="vacio"><h2>Todavía no hay grabaciones</h2>MeCam guarda un clip corto cada vez que detecta una persona.</div>
+  <div id="vacio"><span data-i="grabaciones" style="display:inline-block"></span><h2>Todavía no hay grabaciones</h2>MeCam guarda un clip corto cada vez que detecta una persona.</div>
 </main>
 <div id="modal">
   <div class="cab">
     <b id="mTit"></b><span id="mSub"></span><span class="espacio"></span>
-    <button id="mPrev" title="Anterior">◀</button><button id="mNext" title="Siguiente">▶</button>
-    <button id="mRep">↻ Repetir</button><a class="boton" id="mDesc" href="#" download>⬇ Descargar</a>
-    <button class="peligro" id="mBor">🗑 Borrar</button><button id="mCer">✕ Cerrar</button>
+    <button class="fab" id="mCer" data-i="cerrar" data-tip="Cerrar (Esc)" aria-label="Cerrar"></button>
   </div>
-  <div class="video"><img id="mImg" alt="grabación"></div>
+  <div class="cuerpo">
+    <div class="video"><img id="mImg" alt="grabación"></div>
+    <button class="flecha izq" id="mPrev" data-i="izq" title="Anterior (←)" aria-label="Grabación anterior"></button>
+    <button class="flecha der" id="mNext" data-i="der" title="Siguiente (→)" aria-label="Grabación siguiente"></button>
+    <div id="dockM">
+      <button class="fab" id="mRep" data-i="repetir" data-tip="Repetir" aria-label="Repetir"></button>
+      <a class="fab" id="mDesc" href="#" download data-i="descargar" data-tip="Descargar" aria-label="Descargar"></a>
+      <button class="fab peligro" id="mBor" data-i="papelera" data-tip="Borrar" aria-label="Borrar"></button>
+    </div>
+  </div>
 </div>
 <script>
 (function () {
 'use strict';
 var $ = function (s) { return document.querySelector(s); };
 var clips = [], resumen = {}, actual = null;
+
+function svg(n) { return '<svg viewBox="0 0 256 256" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+document.querySelectorAll('[data-i]').forEach(function (e) { e.insertAdjacentHTML('afterbegin', svg(e.dataset.i)); });
 
 function dos(n) { return (n < 10 ? '0' : '') + n; }
 function fmtFecha(t) {
@@ -360,8 +419,12 @@ function pintar() {
   lista.forEach(function (c) {
     var caja = el('div', 'clip');
     var mini = el('div', 'mini'), img = el('img'); img.loading = 'lazy'; img.alt = ''; img.src = url('/miniatura/', c.id);
-    mini.appendChild(img); mini.appendChild(el('span', 'dur', fmtDur(c.duracion)));
-    var info = el('div', 'info'); info.appendChild(el('b', '', c.camara));
+    var play = el('div', 'play'); play.insertAdjacentHTML('afterbegin', svg('play'));
+    mini.appendChild(img); mini.appendChild(play); mini.appendChild(el('span', 'dur', fmtDur(c.duracion)));
+    var info = el('div', 'info'), nom = el('b');
+    nom.insertAdjacentHTML('afterbegin', svg('celular'));
+    nom.appendChild(document.createTextNode(c.camara));
+    info.appendChild(nom);
     info.appendChild(el('span', '', fmtFecha(c.inicio) + ' · ' + fmtTam(c.tam)));
     caja.appendChild(mini); caja.appendChild(info);
     caja.addEventListener('click', function () { abrir(c.id); });
@@ -416,11 +479,13 @@ $('#mPrev').addEventListener('click', function () { mover(-1); });
 $('#mNext').addEventListener('click', function () { mover(1); });
 $('#mRep').addEventListener('click', function () { if (actual) $('#mImg').src = url('/clip/', actual) + '?t=' + Date.now(); });
 $('#mBor').addEventListener('click', borrar);
-$('#modal').addEventListener('click', function (e) { if (e.target === $('#modal') || e.target.className === 'video') cerrar(); });
+$('#modal').addEventListener('click', function (e) { if (e.target === $('#modal') || e.target.className === 'video' || e.target.className === 'cuerpo') cerrar(); });
 document.addEventListener('keydown', function (e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Escape') cerrar();
   else if (actual && e.key === 'ArrowLeft') mover(-1);
   else if (actual && e.key === 'ArrowRight') mover(1);
+  else if (actual && (e.key === 'r' || e.key === 'R')) $('#mRep').click();
 });
 cargar(); setInterval(cargar, 5000);
 })();

@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'servidor/**'
+      - 'herramientas/**'
       - '**.md'
       - '.gitignore'
       - '.github/**'

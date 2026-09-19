@@ -25,6 +25,7 @@ from aiohttp import web
 from ultralytics import YOLO
 
 import grabaciones
+import iconos
 import vinculos
 
 PORT = 8443        # navegador (HTTPS)
@@ -232,7 +233,7 @@ body{
   display:flex;flex-direction:column;overflow:hidden;
 }
 button{font:inherit;color:inherit;cursor:pointer}
-svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg{width:16px;height:16px;fill:currentColor;flex:none}
 
 /* ---------- Barra superior ---------- */
 #barra{
@@ -242,7 +243,8 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   border-bottom:1px solid var(--borde);
 }
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.3px}
-.logo i{width:12px;height:12px;border-radius:50%;background:var(--acento);box-shadow:0 0 14px var(--acento)}
+.logo .logo-ic{display:grid;place-items:center}
+.logo .logo-ic svg{width:30px;height:30px;color:var(--acento);filter:drop-shadow(0 0 8px rgba(56,189,248,.5))}
 .logo small{color:var(--suave);font-weight:500;font-size:12px;letter-spacing:.4px}
 .pill{
   display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
@@ -264,6 +266,49 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 .btn:hover{border-color:var(--acento)}
 .btn.on{background:rgba(56,189,248,.15);border-color:var(--acento);color:var(--acento)}
 
+/* ---------- Botones flotantes ---------- */
+#dock{
+  position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:15;
+  display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:24px;
+  background:rgba(17,24,35,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.09);box-shadow:0 16px 44px rgba(0,0,0,.5);
+}
+.fab{
+  position:relative;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;padding:0;
+  border:1px solid var(--borde);background:var(--panel2);color:var(--texto);text-decoration:none;
+  transition:transform .15s,border-color .15s,background .15s,box-shadow .15s,color .15s;
+}
+.fab svg{width:26px;height:26px}
+.fab:hover{transform:scale(1.08);border-color:var(--acento);color:var(--acento)}
+.fab:active{transform:scale(.96)}
+.fab:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.fab.on{background:rgba(56,189,248,.18);border-color:var(--acento);color:var(--acento);box-shadow:0 0 18px rgba(56,189,248,.35)}
+.fab::after{
+  content:attr(data-tip);position:absolute;right:calc(100% + 12px);top:50%;transform:translateY(-50%);
+  white-space:nowrap;background:#0b111a;border:1px solid var(--borde);color:var(--texto);
+  padding:6px 10px;border-radius:8px;font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .15s;
+}
+.fab:hover::after,.fab:focus-visible::after{opacity:1}
+.fab .punto-nuevo{position:absolute;top:5px;right:5px;width:11px;height:11px;border-radius:50%;background:var(--alerta);border:2px solid var(--panel2);display:none}
+.fab .valor{
+  position:absolute;right:-3px;bottom:-3px;min-width:20px;height:20px;border-radius:10px;padding:0 5px;
+  background:var(--acento);color:#04121f;font-size:11px;font-weight:800;display:grid;place-items:center;
+}
+@media (max-width:700px){
+  #dock{
+    right:auto;left:50%;top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    flex-direction:row;gap:8px;padding:8px;border-radius:28px;
+  }
+  .fab{width:46px;height:46px}
+  .fab::after{display:none}
+}
+.vacio-ic svg{width:68px;height:68px;color:var(--acento);filter:drop-shadow(0 0 14px rgba(56,189,248,.45))}
+#vacio ol{text-align:left;color:var(--suave);line-height:1.6;padding-left:22px;margin:10px 0}
+#vacio .chico{font-size:13px}
+.evic{display:grid;place-items:center;flex:none;margin-top:1px}
+.evic svg{width:18px;height:18px}
+.evic.alerta{color:var(--alerta)}.evic.ok{color:var(--ok)}.evic.info{color:var(--acento)}.evic.suave{color:var(--suave)}
+
 /* ---------- Cuadrícula de cámaras ---------- */
 #grid{
   flex:1;min-height:0;display:grid;gap:10px;padding:10px;overflow:auto;
@@ -284,20 +329,24 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 .nombre{font-weight:600;font-size:14px;text-shadow:0 1px 3px #000;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .estado{font-size:11px;font-weight:700;letter-spacing:.6px;padding:3px 8px;border-radius:999px;background:#0008;border:1px solid #fff2}
 .estado.vivo{color:var(--ok)}
+.estado.vivo::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;box-shadow:0 0 8px var(--ok);animation:latido 1.8s ease-in-out infinite}
+@keyframes latido{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .estado.sin{color:var(--aviso)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:12px;padding:3px 9px;border-radius:999px;background:rgba(248,113,113,.2);border:1px solid rgba(248,113,113,.55);color:#ffd9d9}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:999px;background:rgba(248,113,113,.2);border:1px solid rgba(248,113,113,.55);color:#ffd9d9}
+.chip svg{width:14px;height:14px}
 .chip.auto{background:rgba(56,189,248,.18);border-color:rgba(56,189,248,.55);color:#d3efff}
 .meta{margin-left:auto;font-size:11.5px;color:#cbd5e1;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000}
 .acciones{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .15s}
 .tile:hover .acciones,.tile:focus-within .acciones{opacity:1}
 @media (hover:none){.acciones{opacity:1}}
 .ic{
-  width:34px;height:34px;display:grid;place-items:center;border-radius:9px;
+  width:38px;height:38px;display:grid;place-items:center;border-radius:11px;
   border:1px solid #ffffff2b;background:#0009;backdrop-filter:blur(6px);color:var(--texto);
 }
 .ic:hover{border-color:var(--acento);color:var(--acento)}
-.ic svg{width:18px;height:18px}
+.ic svg{width:21px;height:21px}
 
 /* ---------- Sin cámaras ---------- */
 #vacio{position:fixed;left:0;right:0;bottom:0;top:64px;display:none;place-items:center;padding:24px;pointer-events:none;z-index:1}
@@ -330,7 +379,7 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 #sinEv{color:var(--suave);padding:20px;text-align:center;font-size:14px}
 
 /* ---------- Vista ampliada ---------- */
-#foco{position:fixed;inset:0;z-index:30;background:rgba(4,7,11,.97);display:flex;flex-direction:column}
+#foco{position:fixed;inset:0;z-index:30;background:rgba(4,7,11,.985);display:flex;flex-direction:column}
 #foco[hidden]{display:none}
 #focoBarra{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -351,6 +400,33 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 .mini img{width:100%;height:100%;object-fit:cover;display:block}
 .mini span{position:absolute;left:6px;bottom:4px;font-size:11px;text-shadow:0 1px 3px #000;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* ---------- Controles flotantes de la vista ampliada ---------- */
+#focoCuerpo{position:relative;flex:1;min-height:0;display:flex}
+#focoCuerpo #visor{flex:1}
+.flecha{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:54px;height:54px;border-radius:50%;
+  display:grid;place-items:center;padding:0;color:var(--texto);
+  background:rgba(17,24,35,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);transition:transform .15s,border-color .15s,color .15s;
+}
+.flecha svg{width:28px;height:28px}
+.flecha.izq{left:14px}.flecha.der{right:14px}
+.flecha:hover{border-color:var(--acento);color:var(--acento);transform:translateY(-50%) scale(1.08)}
+#focoDock{
+  position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:2;
+  display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
+  background:rgba(17,24,35,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 40px rgba(0,0,0,.6);
+}
+#focoDock .fab{width:44px;height:44px}
+#focoDock .fab svg{width:24px;height:24px}
+#focoDock .fab::after{right:auto;left:50%;top:auto;bottom:calc(100% + 12px);transform:translateX(-50%)}
+#focoDock .sep{width:1px;height:26px;background:var(--borde);margin:0 4px}
+@media (max-width:700px){
+  .flecha{width:46px;height:46px}.flecha.izq{left:8px}.flecha.der{right:8px}
+  #focoDock{gap:4px;padding:6px 8px}#focoDock .fab{width:40px;height:40px}#focoDock .fab::after{display:none}
+}
+
 /* ---------- Aviso emergente ---------- */
 #toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--panel2);
@@ -360,41 +436,49 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 #toast.ver{opacity:1;transform:translateX(-50%)}
 
 @media (max-width:700px){
+  #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   #barra{gap:8px;padding:8px 12px}
-  .logo small,.btn span{display:none}
+  .logo small{display:none}
   .btn{padding:8px 10px}
   #reloj{display:none}
   .mini{width:104px;height:64px}
 }
+/* el espacio para los botones flotantes va al final para ganarle a la regla base de #grid */
+@media (min-width:701px){#grid{padding-right:86px}}
+@media (max-width:700px){#grid{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
 </style></head><body>
 
+<!--SPRITE-->
 <header id="barra">
-  <div class="logo"><i></i><span>MeCam</span><small>Centro de control</small></div>
+  <div class="logo"><span class="logo-ic" data-i="logo"></span><span>MeCam</span><small>Centro de control</small></div>
   <span class="pill" id="pSrv"><span class="punto"></span><b id="pSrvTxt">Conectando…</b></span>
   <span class="pill"><b id="nCams">0</b> cámaras · <b id="nVivo">0</b> en vivo</span>
   <span class="pill" id="reloj"></span>
   <span class="espacio"></span>
-  <div class="grupo" id="gLayout" role="group" aria-label="Columnas de la cuadrícula">
-    <button data-c="auto" title="Distribución automática">Auto</button>
-    <button data-c="1" title="1 columna">1</button>
-    <button data-c="2" title="2 columnas">2</button>
-    <button data-c="3" title="3 columnas">3</button>
-  </div>
-  <button class="btn" id="bRaw" data-i="recuadro" title="Ver el video sin los recuadros de detección" aria-label="Ver sin recuadros"><span>Sin recuadros</span></button>
-  <button class="btn" id="bSonido" data-i="campana" title="Avisar con un sonido cuando aparezca una persona" aria-label="Alerta sonora"><span>Alerta sonora</span></button>
-  <a class="btn" href="/grabaciones" title="Ver los clips grabados" style="text-decoration:none"><span>Grabaciones</span></a>
-  <button class="btn" id="bAct" data-i="actividad" title="Registro de actividad" aria-label="Actividad"><span>Actividad</span></button>
-  <button class="btn" id="bPantalla" data-i="ampliar" title="Pantalla completa" aria-label="Pantalla completa"><span>Pantalla completa</span></button>
 </header>
 
 <main id="grid"></main>
 
+<nav id="dock" aria-label="Acciones del centro de control">
+  <a class="fab" href="/grabaciones" data-i="grabaciones" data-tip="Grabaciones (G)" aria-label="Grabaciones"></a>
+  <button class="fab" id="bAct" data-i="actividad" data-tip="Actividad (A)" aria-label="Actividad"><i class="punto-nuevo" id="badgeAct"></i></button>
+  <button class="fab" id="bSonido" data-i="campana_off" data-tip="Alerta sonora (S)" aria-label="Alerta sonora" aria-pressed="false"></button>
+  <button class="fab" id="bRaw" data-i="recuadro" data-tip="Ver sin recuadros (R)" aria-label="Ver sin recuadros" aria-pressed="false"></button>
+  <button class="fab" id="bLayout" data-i="layout" data-tip="Distribución de las cámaras (L)" aria-label="Distribución de las cámaras"><b class="valor" id="valLayout">A</b></button>
+  <button class="fab" id="bPantalla" data-i="ampliar" data-tip="Pantalla completa (F)" aria-label="Pantalla completa"></button>
+</nav>
+
 <div id="vacio">
   <div class="caja">
+    <div class="vacio-ic" data-i="logo"></div>
     <h2>Esperando cámaras…</h2>
-    <p>Abre la app <b>MeCam</b> en tus celulares y escribe esta IP:</p>
-    <p><code id="vacioIp">—</code></p>
-    <p>Cada celular debe tener un nombre distinto. Aparecerán aquí solos.</p>
+    <p>Para conectar un celular:</p>
+    <ol>
+      <li>En la computadora, en la ventana de <b>MeCam</b>, toca <b>Vincular dispositivo</b>.</li>
+      <li>En el celular, abre <b>MeCam</b> y toca <b>Escanear QR para vincular</b>.</li>
+    </ol>
+    <p>Aparecerá aquí solo, con su propio nombre.</p>
+    <p class="chico">IP de esta computadora (solo para la conexión manual): <code id="vacioIp">—</code></p>
   </div>
 </div>
 
@@ -410,16 +494,21 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
     <span class="estado sin" id="focoEstado">SIN SEÑAL</span>
     <span class="chips" id="focoChips"></span>
     <span class="espacio"></span>
-    <button class="ic" id="fPrev" data-i="izq" title="Cámara anterior" aria-label="Cámara anterior"></button>
-    <button class="ic" id="fNext" data-i="der" title="Cámara siguiente" aria-label="Cámara siguiente"></button>
-    <button class="ic" id="fMenos" data-i="menos" title="Alejar" aria-label="Alejar"></button>
-    <span class="pill" id="fZoom">100%</span>
-    <button class="ic" id="fMas" data-i="mas" title="Acercar" aria-label="Acercar"></button>
-    <button class="ic" id="fReset" data-i="reset" title="Restablecer zoom" aria-label="Restablecer zoom"></button>
-    <button class="ic" id="fFoto" data-i="camara" title="Capturar foto" aria-label="Capturar foto"></button>
-    <button class="ic" id="fPant" data-i="ampliar" title="Pantalla completa" aria-label="Pantalla completa"></button>
   </div>
-  <div id="visor"><img id="focoImg" alt="" draggable="false"></div>
+  <div id="focoCuerpo">
+    <div id="visor"><img id="focoImg" alt="" draggable="false"></div>
+    <button class="flecha izq" id="fPrev" data-i="izq" title="Cámara anterior (←)" aria-label="Cámara anterior"></button>
+    <button class="flecha der" id="fNext" data-i="der" title="Cámara siguiente (→)" aria-label="Cámara siguiente"></button>
+    <div id="focoDock">
+      <button class="fab" id="fMenos" data-i="menos" data-tip="Alejar (−)" aria-label="Alejar"></button>
+      <span class="pill" id="fZoom">100%</span>
+      <button class="fab" id="fMas" data-i="mas" data-tip="Acercar (+)" aria-label="Acercar"></button>
+      <button class="fab" id="fReset" data-i="reset" data-tip="Zoom normal (0)" aria-label="Restablecer zoom"></button>
+      <span class="sep"></span>
+      <button class="fab" id="fFoto" data-i="camara" data-tip="Capturar foto (C)" aria-label="Capturar foto"></button>
+      <button class="fab" id="fPant" data-i="ampliar" data-tip="Pantalla completa (F)" aria-label="Pantalla completa"></button>
+    </div>
+  </div>
   <div id="tiras"></div>
 </div>
 
@@ -430,23 +519,14 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   'use strict';
   const $ = (s) => document.querySelector(s);
 
-  const ICONOS = {
-    camara: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
-    ampliar: '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',
-    cerrar: '<path d="M18 6 6 18M6 6l12 12"/>',
-    mas: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/>',
-    menos: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35M8 11h6"/>',
-    reset: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
-    campana: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>',
-    recuadro: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/>',
-    actividad: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
-    izq: '<path d="m15 18-6-6 6-6"/>',
-    der: '<path d="m9 18 6-6-6-6"/>'
-  };
   const SING = { personas: 'persona', autos: 'auto', motos: 'moto', buses: 'bus', camiones: 'camión',
                  bicicletas: 'bicicleta', gatos: 'gato', perros: 'perro' };
-  function svg(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ICONOS[n] || '') + '</svg>'; }
+  // Los íconos (Phosphor) vienen en un sprite incrustado en la página: no hace falta internet
+  function svg(n) { return '<svg viewBox="0 0 256 256" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+  function cambiarIcono(el, n) { const u = el.querySelector('use'); if (u) u.setAttribute('href', '#i-' + n); }
   document.querySelectorAll('[data-i]').forEach(function (e) { e.insertAdjacentHTML('afterbegin', svg(e.dataset.i)); });
+  const ICONO_CHIP = { personas: 'persona', autos: 'auto', motos: 'moto', buses: 'bus', camiones: 'camion',
+                       bicicletas: 'bici', gatos: 'gato', perros: 'perro' };
 
   // ---- Preferencias del visor (se guardan en este navegador)
   const CLAVE = 'mecam_visor';
@@ -459,6 +539,7 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   let camaras = [];                 // último estado recibido del servidor
   let enLinea = null;               // null = todavía sin dato
   let eventosPrev = -1;
+  let eventosVistos = -1;           // hasta qué evento ya vio la persona (para el punto rojo)
   const foco = { nombre: null, zoom: 1, x: 0, y: 0 };
 
   function urlStream(n, extra) {
@@ -492,7 +573,7 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
         if (sigue) img.src = urlStream(nombre, 't=' + Date.now());
       }, 2000);
     };
-    img.src = urlStream(nombre);
+    img.src = urlStream(nombre, 't=' + Date.now());   // dirección única: evita que el navegador reutilice un video viejo
   }
   function recargarStreams() {
     tiles.forEach(function (t) { conectarImg(t.img, t.nombre, false); });
@@ -507,7 +588,8 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
       if (!v) return;
       const s = document.createElement('span');
       s.className = 'chip' + (k === 'personas' ? '' : ' auto');
-      s.textContent = v + ' ' + (v === 1 ? (SING[k] || k) : k);
+      s.insertAdjacentHTML('afterbegin', svg(ICONO_CHIP[k] || 'pulse'));
+      s.appendChild(document.createTextNode(v + ' ' + (v === 1 ? (SING[k] || k) : k)));
       cont.appendChild(s);
     });
   }
@@ -572,6 +654,15 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   }
 
   // ---- Registro de actividad
+  function iconoEvento(texto) {
+    const x = texto.toLowerCase();
+    if (x.indexOf('detecci') >= 0) return ['persona', 'alerta'];
+    if (x.indexOf('clip') >= 0) return ['grabaciones', 'info'];
+    if (x.indexOf('desconectada') >= 0) return ['wifi_off', 'suave'];
+    if (x.indexOf('conectada') >= 0) return ['wifi', 'ok'];
+    if (x.indexOf('vinculad') >= 0) return ['qr', 'info'];
+    return ['pulse', 'suave'];
+  }
   function pintarEventos(lista, total) {
     const cont = $('#lista');
     cont.textContent = '';
@@ -587,9 +678,13 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
       fila.className = 'ev' + (i === 0 && eventosPrev >= 0 ? ' nuevo' : '');
       const h = document.createElement('time');
       h.textContent = e.hora;
+      const tipo = iconoEvento(e.texto);
+      const ic = document.createElement('span');
+      ic.className = 'evic ' + tipo[1];
+      ic.insertAdjacentHTML('afterbegin', svg(tipo[0]));
       const s = document.createElement('span');
       s.textContent = e.texto;
-      fila.append(h, s);
+      fila.append(h, ic, s);
       cont.appendChild(fila);
     });
   }
@@ -649,6 +744,11 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
     if (d.total_eventos !== eventosPrev) {
       pintarEventos(d.eventos || [], d.total_eventos);
       eventosPrev = d.total_eventos;
+    }
+    if (eventosVistos < 0) eventosVistos = eventosPrev;
+    if (eventosPrev > eventosVistos) {
+      if ($('#actividad').classList.contains('abierto')) eventosVistos = eventosPrev;
+      else $('#badgeAct').style.display = 'block';
     }
 
     if (foco.nombre) {
@@ -859,19 +959,40 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   $('#fFoto').onclick = function () { if (foco.nombre) capturar(foco.nombre); };
   $('#fPant').onclick = function () { pantallaCompleta($('#foco')); };
   $('#bPantalla').onclick = function () { pantallaCompleta(document.documentElement); };
-  $('#bAct').onclick = function () { $('#actividad').classList.toggle('abierto'); };
-  $('#aCerrar').onclick = function () { $('#actividad').classList.remove('abierto'); };
+  function alternarActividad(abrir) {
+    const panel = $('#actividad');
+    const abierto = abrir === undefined ? !panel.classList.contains('abierto') : abrir;
+    panel.classList.toggle('abierto', abierto);
+    $('#bAct').classList.toggle('on', abierto);
+    if (abierto) { eventosVistos = eventosPrev; $('#badgeAct').style.display = 'none'; }
+  }
+  $('#bAct').onclick = function () { alternarActividad(); };
+  $('#aCerrar').onclick = function () { alternarActividad(false); };
+  function iconosPantalla() {
+    const n = document.fullscreenElement ? 'reducir' : 'ampliar';
+    cambiarIcono($('#bPantalla'), n);
+    cambiarIcono($('#fPant'), n);
+  }
+  document.addEventListener('fullscreenchange', iconosPantalla);
+  if (!document.fullscreenEnabled) { $('#bPantalla').style.display = 'none'; $('#fPant').style.display = 'none'; }
 
+  const ORDEN_COLS = ['auto', '1', '2', '3'];
   function pintarPrefs() {
-    document.querySelectorAll('#gLayout button').forEach(function (b) {
-      b.classList.toggle('on', b.dataset.c === String(prefs.cols));
-    });
+    $('#valLayout').textContent = prefs.cols === 'auto' ? 'A' : String(prefs.cols);
+    $('#bLayout').classList.toggle('on', prefs.cols !== 'auto');
     $('#bRaw').classList.toggle('on', prefs.raw);
     $('#bSonido').classList.toggle('on', prefs.sonido);
+    $('#bRaw').setAttribute('aria-pressed', String(prefs.raw));
+    $('#bSonido').setAttribute('aria-pressed', String(prefs.sonido));
+    cambiarIcono($('#bSonido'), prefs.sonido ? 'campana' : 'campana_off');
   }
-  document.querySelectorAll('#gLayout button').forEach(function (b) {
-    b.onclick = function () { prefs.cols = b.dataset.c; guardar(); pintarPrefs(); layout(); };
-  });
+  function siguienteLayout() {
+    const i = ORDEN_COLS.indexOf(String(prefs.cols));
+    prefs.cols = ORDEN_COLS[(i + 1) % ORDEN_COLS.length];
+    guardar(); pintarPrefs(); layout();
+    aviso(prefs.cols === 'auto' ? 'Distribución automática' : prefs.cols + (prefs.cols === '1' ? ' columna' : ' columnas'));
+  }
+  $('#bLayout').onclick = siguienteLayout;
   $('#bRaw').onclick = function () {
     prefs.raw = !prefs.raw; guardar(); pintarPrefs(); recargarStreams();
     aviso(prefs.raw ? 'Mostrando el video sin recuadros' : 'Mostrando las detecciones');
@@ -883,15 +1004,26 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   };
 
   document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const ampliada = !$('#foco').hidden;
     if (e.key === 'Escape') {
-      if (!$('#foco').hidden) cerrarFoco();
-      else $('#actividad').classList.remove('abierto');
-    } else if (!$('#foco').hidden) {
+      if (ampliada) cerrarFoco(); else alternarActividad(false);
+    } else if (ampliada) {
       if (e.key === 'ArrowLeft') vecina(-1);
       else if (e.key === 'ArrowRight') vecina(1);
       else if (e.key === '+' || e.key === '=') zoomPor(1.4);
       else if (e.key === '-') zoomPor(1 / 1.4);
       else if (e.key === '0') resetZoom();
+      else if (e.key === 'f' || e.key === 'F') pantallaCompleta($('#foco'));
+      else if (e.key === 'c' || e.key === 'C') { if (foco.nombre) capturar(foco.nombre); }
+    } else {
+      const k = e.key.toLowerCase();
+      if (k === 'a') alternarActividad();
+      else if (k === 's') $('#bSonido').click();
+      else if (k === 'r') $('#bRaw').click();
+      else if (k === 'l') siguienteLayout();
+      else if (k === 'f') pantallaCompleta(document.documentElement);
+      else if (k === 'g') location.href = '/grabaciones';
     }
   });
   window.addEventListener('resize', layout);
@@ -1032,7 +1164,8 @@ async def pagina_camara(request):
 
 
 async def pagina_ver(request):
-    return web.Response(text=PAGINA_VER, content_type="text/html")
+    return web.Response(text=PAGINA_VER.replace("<!--SPRITE-->", iconos.SPRITE), content_type="text/html",
+                        headers={"Cache-Control": "no-store"})
 
 
 async def estado(request):
@@ -1100,7 +1233,8 @@ async def stream(request):
 
 
 async def pagina_grabaciones(request):
-    return web.Response(text=grabaciones.PAGINA, content_type="text/html", headers={"Cache-Control": "no-store"})
+    return web.Response(text=grabaciones.PAGINA.replace("<!--SPRITE-->", iconos.SPRITE), content_type="text/html",
+                        headers={"Cache-Control": "no-store"})
 
 
 async def api_grabaciones(request):

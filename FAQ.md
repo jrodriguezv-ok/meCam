@@ -55,16 +55,22 @@ Es la página `https://IP-DE-LA-COMPUTADORA:8443/ver`. Funciona en la computador
 
 ### ¿Cómo uso el visor?
 
-- **Cuadrícula automática:** muestra todas las cámaras conectadas y se acomoda sola según cuántas haya. Arriba puedes fijarla en 1, 2 o 3 columnas.
-- **Ampliar una cámara:** haz clic (o toca) sobre ella. Abajo verás miniaturas para pasar a otra, y también puedes usar las flechas del teclado (← →). **Esc** cierra la vista ampliada.
-- **Zoom:** en la vista ampliada usa la rueda del mouse o los botones **+** y **−**. En el celular, pellizca con dos dedos. Con el zoom aplicado, arrastra para moverte. Doble clic acerca o restablece.
-- **Capturar foto:** el botón de la cámara fotográfica guarda la imagen actual en la carpeta de descargas de tu navegador. MeCam no guarda nada en el servidor.
-- **Sin recuadros:** muestra el video original, sin los recuadros de la detección.
-- **Alerta sonora:** suena un aviso cuando aparece una persona. Los navegadores solo dejan activar el sonido tras un toque, por eso es un botón.
-- **Actividad:** panel con el historial (cámaras que se conectan o se desconectan, personas y autos detectados).
-- **Pantalla completa:** para dejarlo como un panel de vigilancia.
+Los botones están en una **barra flotante**: a la derecha en la computadora y abajo en el celular. Pasa el mouse sobre un botón para ver su nombre y su tecla rápida.
 
-Cuando aparece una persona, la ficha de esa cámara se ilumina en rojo. Tus preferencias (columnas, sin recuadros, sonido) se guardan en ese navegador.
+| Botón | Qué hace | Tecla |
+|---|---|---|
+| Grabaciones | Abre la página con los clips guardados | **G** |
+| Actividad | Historial con un ícono por tipo de aviso. Un **punto rojo** te avisa si hay algo nuevo | **A** |
+| Alerta sonora | Suena un aviso cuando aparece una persona (la campana se ve tachada cuando está apagada) | **S** |
+| Sin recuadros | Muestra el video original, sin los recuadros de detección | **R** |
+| Distribución | Cambia entre automática, 1, 2 y 3 columnas. La letra o el número en la esquina del botón indica cuál está activa | **L** |
+| Pantalla completa | Para dejarlo como un panel de vigilancia | **F** |
+
+**Ampliar una cámara:** haz clic (o toca) sobre ella. Aparecen flechas grandes a los lados para pasar a la anterior o la siguiente (también con **←** y **→**) y miniaturas abajo. **Esc** cierra la vista ampliada.
+
+**Zoom y foto:** en la vista ampliada, la barra flotante de abajo tiene **alejar**, **acercar**, **zoom normal** (**0**), **capturar foto** (**C**) y **pantalla completa** (**F**). También puedes usar la rueda del mouse; en el celular, pellizca con dos dedos. Con el zoom aplicado, arrastra para moverte; doble clic acerca o restablece. La foto se guarda en la carpeta de descargas de tu navegador: MeCam no guarda nada en el servidor.
+
+Cuando aparece una persona, la ficha de esa cámara se ilumina en rojo. Tus preferencias (columnas, sin recuadros, sonido) se guardan en ese navegador. Los íconos son de [Phosphor Icons](https://phosphoricons.com) y vienen incluidos en el programa, así que el visor funciona sin internet.
 
 ### ¿Qué pasa si dos celulares usan el mismo nombre?
 
@@ -234,7 +240,7 @@ Sí. En `servidor.py` busca la línea `CLASES = [0, 2]` y agrega los números qu
 ### ¿MeCam graba video, manda alertas o graba audio?
 
 - **Graba clips:** sí, cuando detecta una persona (mira la sección «Grabaciones»).
-- **Manda alertas:** todavía no. Está en la lista de mejoras: alertas por Telegram.
+- **Manda alertas:** no por ahora.
 - **Graba audio:** todavía no. También está en la lista, junto con las zonas de alerta.
 
 ## Grabaciones
@@ -246,7 +252,7 @@ Cuando una cámara detecta una **persona**, MeCam guarda un clip corto con los r
 ### ¿Dónde veo las grabaciones?
 
 - En la ventana de MeCam, haz clic en **Ver grabaciones**.
-- O en el centro de control, haz clic en el botón **Grabaciones** de arriba.
+- O en el centro de control, haz clic en el botón **Grabaciones** de la barra flotante (o pulsa la tecla **G**).
 - O escribe `https://localhost:8443/grabaciones` en el navegador (desde otro aparato, cambia `localhost` por la IP de la computadora).
 
 Cada grabación aparece con su miniatura, cámara, fecha, duración y tamaño. Toca una para verla; con las flechas ◀ ▶ pasas a la anterior o siguiente. Hay un filtro por cámara, y los botones **Descargar** y **Borrar**.
@@ -367,6 +373,10 @@ Casi seguro el sistema cerró la app para ahorrar batería. Repite el paso de **
 2. Solo se graba cuando hay una **persona** visible en dos cuadros seguidos; autos y otros objetos no disparan la grabación.
 3. Si la cámara se desconecta o detienes el servidor en pleno clip, se guarda lo que había grabado.
 4. Abre **Abrir carpeta**: si ahí hay archivos pero la página no los muestra, recárgala. Si la carpeta no se abre o el disco está lleno, mira el recuadro **Detalles** de la ventana de MeCam.
+
+### En el centro de control algunas cámaras no cargan o dice «Sin conexión con el servidor»
+
+Cada cámara abierta en el centro de control usa una conexión de video, y los navegadores permiten unas **6 conexiones por dirección**. Con 5 o más cámaras abiertas a la vez puede quedar sin lugar la conexión que consulta el estado. **No lo probé con tantas cámaras.** Si te pasa, cierra otras pestañas de MeCam y avísame (abre un **Issue**): está en la lista de mejoras.
 
 ### La ventana de MeCam no se abre
 
