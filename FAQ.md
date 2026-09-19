@@ -9,6 +9,7 @@ Guía para la versión 5 de MeCam o superior. Si algo de esta guía no coincide 
 - [Instalación y uso](#instalación-y-uso)
 - [Calor, batería y segundo plano](#calor-batería-y-segundo-plano)
 - [Detección](#detección)
+- [Grabaciones](#grabaciones)
 - [Privacidad y seguridad](#privacidad-y-seguridad)
 - [Problemas frecuentes](#problemas-frecuentes)
 
@@ -232,9 +233,47 @@ Sí. En `servidor.py` busca la línea `CLASES = [0, 2]` y agrega los números qu
 
 ### ¿MeCam graba video, manda alertas o graba audio?
 
-**Todavía no.** Está en la lista de mejoras: audio, alertas por Telegram, grabación de clips y zonas de alerta.
+- **Graba clips:** sí, cuando detecta una persona (mira la sección «Grabaciones»).
+- **Manda alertas:** todavía no. Está en la lista de mejoras: alertas por Telegram.
+- **Graba audio:** todavía no. También está en la lista, junto con las zonas de alerta.
 
----
+## Grabaciones
+
+### ¿Cómo funciona la grabación?
+
+Cuando una cámara detecta una **persona**, MeCam guarda un clip corto con los recuadros de detección. Incluye unos **3 segundos de antes** de que apareciera, y sigue grabando hasta **6 segundos después** de que la persona se va (máximo 90 segundos por clip; si sigue habiendo alguien, empieza otro). Para evitar falsas alarmas, hace falta ver a la persona en dos cuadros seguidos. Solo se graban **personas**, no autos.
+
+### ¿Dónde veo las grabaciones?
+
+- En la ventana de MeCam, haz clic en **Ver grabaciones**.
+- O en el centro de control, haz clic en el botón **Grabaciones** de arriba.
+- O escribe `https://localhost:8443/grabaciones` en el navegador (desde otro aparato, cambia `localhost` por la IP de la computadora).
+
+Cada grabación aparece con su miniatura, cámara, fecha, duración y tamaño. Toca una para verla; con las flechas ◀ ▶ pasas a la anterior o siguiente. Hay un filtro por cámara, y los botones **Descargar** y **Borrar**.
+
+### ¿Dónde se guardan los archivos?
+
+En la carpeta `grabaciones` dentro de `%APPDATA%\MeCam` (en la ventana de MeCam, el botón **Abrir carpeta** te lleva directo). No están en OneDrive ni en ninguna nube. Cada clip son tres archivos con el mismo nombre: el video (`.mp4`), una miniatura (`.jpg`) y un pequeño archivo de datos (`.json`).
+
+### ¿Cuánto espacio ocupan?
+
+Depende de la escena; no lo medí con el detector real, pero son clips cortos. Para que nunca se llene el disco, MeCam **borra solo** los clips de más de **30 días** y, si el total pasa de **5 GB**, los más antiguos. Arriba de la página de grabaciones ves cuánto espacio llevas usado.
+
+### ¿Puedo desactivar la grabación?
+
+Sí: en la ventana de MeCam desmarca **Grabar un clip cuando se detecte una persona**. Se recuerda al reiniciar. La página de grabaciones te avisa cuando está desactivada.
+
+### ¿Con qué programa abro los archivos descargados?
+
+Los `.mp4` usan un formato de video común pero antiguo: **VLC** (gratis) los abre siempre. Algunos navegadores y reproductores de Windows pueden no abrirlos. Por eso la página de grabaciones de MeCam los reproduce ella misma, sin descargar nada.
+
+### ¿Los clips llevan audio?
+
+No, todavía no: MeCam solo transmite video. El audio está en la lista de mejoras.
+
+### ¿Quién puede ver las grabaciones?
+
+Los mismos que pueden ver el centro de control: esta computadora, los dispositivos vinculados y tu red Tailscale (mira «Vincular dispositivos»). Sin esa autorización, la página de grabaciones muestra «Este dispositivo no está vinculado».
 
 ## Privacidad y seguridad
 
@@ -321,6 +360,13 @@ Desinstala la versión anterior de MeCam (mantén pulsado su ícono, **Desinstal
 ### El celular deja de transmitir después de un rato
 
 Casi seguro el sistema cerró la app para ahorrar batería. Repite el paso de **Ajustes de batería** de la sección "Calor, batería y segundo plano". Si la notificación de MeCam dice "En pausa por calor", el celular se está enfriando: espera o baja los cuadros por segundo.
+
+### No se guardan clips
+
+1. Comprueba que la casilla **Grabar un clip cuando se detecte una persona** esté marcada en la ventana de MeCam.
+2. Solo se graba cuando hay una **persona** visible en dos cuadros seguidos; autos y otros objetos no disparan la grabación.
+3. Si la cámara se desconecta o detienes el servidor en pleno clip, se guarda lo que había grabado.
+4. Abre **Abrir carpeta**: si ahí hay archivos pero la página no los muestra, recárgala. Si la carpeta no se abre o el disco está lleno, mira el recuadro **Detalles** de la ventana de MeCam.
 
 ### La ventana de MeCam no se abre
 

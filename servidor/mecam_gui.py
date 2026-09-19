@@ -82,8 +82,8 @@ class App:
         self.qr_nuevo_en = 0.0        # cuándo mostrar un QR nuevo tras vincular un dispositivo
 
         root.title("MeCam")
-        root.geometry("620x820")
-        root.minsize(540, 720)
+        root.geometry("620x900")
+        root.minsize(540, 780)
         root.configure(bg=FONDO)
         root.protocol("WM_DELETE_WINDOW", self.cerrar)
 
@@ -130,10 +130,18 @@ class App:
         tk.Label(self.panel, textvariable=self.var_sin_vincular, font=("Segoe UI", 9), fg=AMBAR, bg=PANEL,
                  anchor="w", justify="left", wraplength=500).pack(fill="x", padx=14, pady=(6, 0))
 
+        self.var_grabar = tk.BooleanVar(value=True)
+        tk.Checkbutton(self.panel, text="Grabar un clip cuando se detecte una persona", variable=self.var_grabar,
+                       command=self.alternar_grabar, bg=PANEL, fg=TEXTO, selectcolor=PANEL2,
+                       activebackground=PANEL, activeforeground=TEXTO, font=("Segoe UI", 10),
+                       anchor="w").pack(fill="x", padx=14, pady=(12, 0))
         pie = tk.Frame(self.panel, bg=PANEL)
-        pie.pack(fill="x", padx=14, pady=(10, 14))
-        boton(pie, "Abrir centro de control", self.abrir_visor).pack(side="left")
-        tk.Label(pie, textvariable=self.var_ip, font=("Segoe UI", 9), fg=SUAVE, bg=PANEL).pack(side="right")
+        pie.pack(fill="x", padx=14, pady=(8, 0))
+        boton(pie, "Centro de control", self.abrir_visor).pack(side="left")
+        boton(pie, "Ver grabaciones", self.abrir_grabaciones).pack(side="left", padx=(8, 0))
+        boton(pie, "Abrir carpeta", self.abrir_carpeta).pack(side="left", padx=(8, 0))
+        tk.Label(self.panel, textvariable=self.var_ip, font=("Segoe UI", 9), fg=SUAVE, bg=PANEL,
+                 anchor="w").pack(fill="x", padx=14, pady=(8, 14))
 
         self.var_abrir = tk.BooleanVar(value=True)
         tk.Checkbutton(root, text="Abrir el centro de control al iniciar", variable=self.var_abrir,
@@ -191,6 +199,7 @@ class App:
         if ok:
             self.estado = "activo"
             self.var_ip.set(f"IP de esta computadora: {self.servidor.ip}")
+            self.var_grabar.set(self.mod.grabador.activo)
             self.boton.config(text="■  Detener servidor", state="normal", bg=ROJO, activebackground=ROJO_OSC)
             self.panel.pack(fill="x")
             if self.var_abrir.get():
@@ -234,6 +243,19 @@ class App:
 
     def abrir_visor(self):
         webbrowser.open(f"https://localhost:{PUERTO}/ver")
+
+    def alternar_grabar(self):
+        if self.mod is not None:
+            self.mod.grabador.set_activo(self.var_grabar.get())
+
+    def abrir_grabaciones(self):
+        webbrowser.open(f"https://localhost:{PUERTO}/grabaciones")
+
+    def abrir_carpeta(self):
+        try:
+            os.startfile(self.mod.grabador.carpeta)      # Windows
+        except Exception:
+            messagebox.showinfo("MeCam", f"Las grabaciones están en:\n\n{self.mod.grabador.carpeta}")
 
     def abrir_firewall(self):
         """Pide permiso de administrador (Windows lo pregunta) y abre los dos puertos de MeCam."""

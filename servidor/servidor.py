@@ -24,6 +24,7 @@ import numpy as np
 from aiohttp import web
 from ultralytics import YOLO
 
+import grabaciones
 import vinculos
 
 PORT = 8443        # navegador (HTTPS)
@@ -53,6 +54,7 @@ _id_cuadro = itertools.count(1)
 IP_LOCAL = "127.0.0.1"
 parando = False             # True mientras el servidor se está deteniendo
 registro = vinculos.Registro()   # dispositivos vinculados por QR
+grabador = grabaciones.Grabador(al_guardar=lambda texto: evento(texto))   # clips cuando se detecta una persona
 
 
 class Camara:
@@ -380,6 +382,7 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
   </div>
   <button class="btn" id="bRaw" data-i="recuadro" title="Ver el video sin los recuadros de detección" aria-label="Ver sin recuadros"><span>Sin recuadros</span></button>
   <button class="btn" id="bSonido" data-i="campana" title="Avisar con un sonido cuando aparezca una persona" aria-label="Alerta sonora"><span>Alerta sonora</span></button>
+  <a class="btn" href="/grabaciones" title="Ver los clips grabados" style="text-decoration:none"><span>Grabaciones</span></a>
   <button class="btn" id="bAct" data-i="actividad" title="Registro de actividad" aria-label="Actividad"><span>Actividad</span></button>
   <button class="btn" id="bPantalla" data-i="ampliar" title="Pantalla completa" aria-label="Pantalla completa"><span>Pantalla completa</span></button>
 </header>
@@ -1096,6 +1099,68 @@ async def stream(request):
     return resp
 
 
+async def pagina_grabaciones(request):
+    return web.Response(text=grabaciones.PAGINA, content_type="text/html", headers={"Cache-Control": "no-store"})
+
+
+async def api_grabaciones(request):
+    datos = grabador.resumen()
+    datos["clips"] = grabador.listar()
+    return web.json_response(datos, headers={"Cache-Control": "no-store"})
+
+
+async def api_borrar(request):
+    if not grabador.borrar(request.match_info["id"]):
+        raise web.HTTPNotFound()
+    return web.json_response({"ok": True})
+
+
+async def miniatura(request):
+    ruta = grabador.ruta_miniatura(request.match_info["id"])
+    if not ruta:
+        raise web.HTTPNotFound()
+    return web.FileResponse(ruta, headers={"Cache-Control": "max-age=3600"})
+
+
+async def archivo(request):
+    ruta = grabador.ruta_video(request.match_info["id"])
+    if not ruta:
+        raise web.HTTPNotFound()
+    return web.FileResponse(ruta, headers={"Content-Disposition": f'attachment; filename="{os.path.basename(ruta)}"'})
+
+
+async def clip(request):
+    """Reproduce una grabación como video en directo (sirve en cualquier navegador, sin códecs)."""
+    ruta = grabador.ruta_video(request.match_info["id"])
+    if not ruta:
+        raise web.HTTPNotFound()
+    resp = web.StreamResponse(headers={
+        "Content-Type": "multipart/x-mixed-replace; boundary=frame",
+        "Cache-Control": "no-store",
+    })
+    await resp.prepare(request)
+    loop = asyncio.get_running_loop()
+    cap = cv2.VideoCapture(ruta)
+    fps = cap.get(cv2.CAP_PROP_FPS) or 10
+    try:
+        while not parando:
+            ok, img = await loop.run_in_executor(None, cap.read)
+            if not ok:
+                break
+            ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            if not ok:
+                continue
+            datos = buf.tobytes()
+            await resp.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n" % len(datos)
+                             + datos + b"\r\n")
+            await asyncio.sleep(1 / max(fps, 1))
+    except Exception:
+        pass
+    finally:
+        cap.release()
+    return resp
+
+
 async def ws_camara(request):
     pedido = limpiar_nombre(request.match_info["cam"])
     disp_id = request.query.get("id", "")[:64]
@@ -1142,10 +1207,12 @@ async def ws_camara(request):
                     cam.conteo, cam.res = conteo, resolucion
                     cam.n = next(_id_cuadro)
                     registrar_detecciones(cam, conteo, ahora)
+                    grabador.agregar(nombre, jpg, conteo, ahora)
                 await ws.send_str("ok")
     except (ConnectionResetError, asyncio.CancelledError):
         pass
     finally:
+        grabador.cerrar_camara(nombre)         # guarda el clip que estuviera grabándose
         if camaras.get(nombre) is cam:        # no borrar a un reemplazo que ya tomó este nombre
             del camaras[nombre]
             evento(f"{nombre}: cámara desconectada")
@@ -1180,6 +1247,12 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
         web.get("/foto/{cam}", foto),
         web.get("/ws/{cam}", ws_camara),
         web.get("/stream/{cam}", stream),
+        web.get("/grabaciones", pagina_grabaciones),
+        web.get("/api/grabaciones", api_grabaciones),
+        web.delete("/api/grabaciones/{id}", api_borrar),
+        web.get("/miniatura/{id}", miniatura),
+        web.get("/clip/{id}", clip),
+        web.get("/archivo/{id}", archivo),
     ])
     runner = web.AppRunner(app)
     await runner.setup()
@@ -1208,6 +1281,7 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
         for c in list(camaras.values()):
             await c.cerrar()
         camaras.clear()
+        await asyncio.get_running_loop().run_in_executor(None, grabador.cerrar_todo)   # termina de guardar
         try:
             await asyncio.wait_for(runner.cleanup(), 8)
         except Exception:
