@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
@@ -68,6 +69,8 @@ class CamaraService : LifecycleService() {
     private var analisisActual: ImageAnalysis? = null
     private var sensorGiro: OrientationEventListener? = null
     private var detenido = false
+    private var idDisp = ""
+    @Volatile private var nombreVisible = ""
 
     @Volatile private var conectado = false
     @Volatile private var esperando = false
@@ -80,6 +83,11 @@ class CamaraService : LifecycleService() {
         val prefs = getSharedPreferences("mecam", Context.MODE_PRIVATE)
         ip = intent?.getStringExtra("ip") ?: prefs.getString("ip", "") ?: ""
         nombre = intent?.getStringExtra("nombre") ?: prefs.getString("nombre", "celular1") ?: "celular1"
+        nombreVisible = nombre
+        // Identificador propio de este celular: el servidor lo usa para reconocerlo al reconectar
+        idDisp = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
+            prefs.edit().putString("id", it).apply()
+        }
         val fpsPedido = intent?.getIntExtra("fps", -1) ?: -1
         fps = (if (fpsPedido > 0) fpsPedido else prefs.getInt("fps", 10)).coerceIn(1, 25)
         val orientPedida = intent?.getIntExtra("orientacion", -1) ?: -1
@@ -114,16 +122,22 @@ class CamaraService : LifecycleService() {
     // ------------------------------------------------------------ Conexión
     private fun conectar() {
         if (detenido) return
-        val pedido = Request.Builder().url("ws://$ip:$PUERTO/ws/$nombre").build()
+        val pedido = Request.Builder().url("ws://$ip:$PUERTO/ws/${Uri.encode(nombre)}?id=$idDisp").build()
         ws = cliente!!.newWebSocket(pedido, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 conectado = true
                 esperando = false
-                actualizarNotificacion("Transmitiendo como $nombre")
+                actualizarNotificacion("Transmitiendo como $nombreVisible")
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                esperando = false
+                if (text.startsWith("nombre:")) {
+                    // El servidor puede cambiar el nombre si otro celular ya usa el mismo
+                    nombreVisible = text.removePrefix("nombre:")
+                    actualizarNotificacion("Transmitiendo como $nombreVisible")
+                } else {
+                    esperando = false
+                }
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -242,7 +256,7 @@ class CamaraService : LifecycleService() {
                         enfriando = false
                         calor = false
                         enlazar()
-                        actualizarNotificacion("Transmitiendo como $nombre")
+                        actualizarNotificacion("Transmitiendo como $nombreVisible")
                     }
                 } else {
                     val nuevo = if (calor) temp >= TEMP_OK else temp >= TEMP_BAJAR
@@ -250,7 +264,7 @@ class CamaraService : LifecycleService() {
                         calor = nuevo
                         actualizarNotificacion(
                             if (calor) "Velocidad reducida por calor ($temp °C)"
-                            else "Transmitiendo como $nombre"
+                            else "Transmitiendo como $nombreVisible"
                         )
                     }
                 }

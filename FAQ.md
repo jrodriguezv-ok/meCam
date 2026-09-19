@@ -4,6 +4,7 @@ Guía para la versión 5 de MeCam o superior. Si algo de esta guía no coincide 
 
 **Índice**
 - [Ver las cámaras](#ver-las-cámaras)
+- [El visor (centro de control)](#el-visor-centro-de-control)
 - [Instalación y uso](#instalación-y-uso)
 - [Calor, batería y segundo plano](#calor-batería-y-segundo-plano)
 - [Detección](#detección)
@@ -43,6 +44,33 @@ Sí. Conecta ese celular al mismo Wi-Fi, abre Chrome y entra a `https://IP-DE-LA
 ### ¿Los celulares cámara pueden transmitir desde otra red o con datos móviles?
 
 En teoría sí, si el celular cámara y la computadora tienen Tailscale: en el campo "IP de la computadora" de la app se escribe la dirección `100.x.x.x` de la computadora. **No está probado.** Ten en cuenta que gasta muchos datos (ver "¿Cuánto consume?").
+
+---
+
+## El visor (centro de control)
+
+Es la página `https://IP-DE-LA-COMPUTADORA:8443/ver`. Funciona en la computadora y en el celular.
+
+### ¿Cómo uso el visor?
+
+- **Cuadrícula automática:** muestra todas las cámaras conectadas y se acomoda sola según cuántas haya. Arriba puedes fijarla en 1, 2 o 3 columnas.
+- **Ampliar una cámara:** haz clic (o toca) sobre ella. Abajo verás miniaturas para pasar a otra, y también puedes usar las flechas del teclado (← →). **Esc** cierra la vista ampliada.
+- **Zoom:** en la vista ampliada usa la rueda del mouse o los botones **+** y **−**. En el celular, pellizca con dos dedos. Con el zoom aplicado, arrastra para moverte. Doble clic acerca o restablece.
+- **Capturar foto:** el botón de la cámara fotográfica guarda la imagen actual en la carpeta de descargas de tu navegador. MeCam no guarda nada en el servidor.
+- **Sin recuadros:** muestra el video original, sin los recuadros de la detección.
+- **Alerta sonora:** suena un aviso cuando aparece una persona. Los navegadores solo dejan activar el sonido tras un toque, por eso es un botón.
+- **Actividad:** panel con el historial (cámaras que se conectan o se desconectan, personas y autos detectados).
+- **Pantalla completa:** para dejarlo como un panel de vigilancia.
+
+Cuando aparece una persona, la ficha de esa cámara se ilumina en rojo. Tus preferencias (columnas, sin recuadros, sonido) se guardan en ese navegador.
+
+### ¿Qué pasa si dos celulares usan el mismo nombre?
+
+Ya no se pisan. Si el nombre está en uso por otro celular, MeCam le agrega un número al segundo (por ejemplo `celular1-2`). La app muestra el nombre que recibió en su notificación, y el visor lo indica. Si es el **mismo celular** que se reconecta, conserva su nombre.
+
+### ¿Qué pasa cuando un celular se apaga o pierde el Wi-Fi?
+
+El servidor lo detecta en unos 20 segundos y lo desconecta: su ficha desaparece del visor y queda anotado en **Actividad**. Cuando el celular vuelve, la app se reconecta sola y la ficha reaparece. Si una cámara sigue conectada pero no manda imágenes (por ejemplo, en pausa por calor), la ficha se muestra en gris con la etiqueta **SIN SEÑAL**.
 
 ---
 
@@ -89,7 +117,7 @@ Si tu versión es anterior a la 5, desinstala la app y vuelve a instalarla una v
 
 ### ¿Puedo conectar varios celulares?
 
-Sí. Cada celular necesita un **nombre distinto** en el campo "Nombre de esta cámara" (`celular1`, `celular2`, …). Si dos usan el mismo nombre, el servidor los mezcla como si fueran una sola cámara.
+Sí. Cada celular necesita un **nombre distinto** en el campo "Nombre de esta cámara" (`celular1`, `celular2`, …). Si dos usan el mismo nombre, MeCam le agrega un número al segundo (por ejemplo `celular1-2`) para que no se pisen; aun así, conviene ponerles nombres distintos para reconocerlos.
 
 Cada cámara hace trabajar más a la computadora. Si ves retraso, baja los **cuadros por segundo** de cada celular (5 o 6 suele bastar) o usa menos cámaras.
 
@@ -206,7 +234,7 @@ La app no logra hablar con el servidor. Revisa en orden:
 
 ### La página `/ver` no muestra ninguna cámara
 
-Dice "Cámaras conectadas" pero está vacía: ningún celular está conectado. Mira la ventana negra: debe aparecer `[+] Cámara conectada: celular1`. La primera conexión tarda unos segundos porque carga el modelo.
+Ves el mensaje "Esperando cámaras…": ningún celular está conectado. Mira la ventana negra: debe aparecer `[+] Cámara conectada: celular1`. La primera conexión tarda unos segundos porque carga el modelo.
 
 ### La IP de la computadora cambió y ya no conecta
 

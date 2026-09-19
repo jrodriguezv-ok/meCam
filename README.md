@@ -37,6 +37,8 @@ Abre `https://localhost:8443/ver` en la computadora para ver las cámaras. La co
 - [x] Servicio en segundo plano y control de temperatura
 - [x] Orientación automática (vertical/horizontal)
 - [x] Actualización desde dentro de la app
+- [x] Centro de control en el navegador (cuadrícula automática, ampliar, zoom, fotos, alertas y actividad)
+- [x] Nombres únicos por cámara y limpieza automática de cámaras desconectadas
 - [ ] Audio
 - [ ] Alertas (Telegram) y grabación de clips
 - [ ] Zonas de alerta
