@@ -8,9 +8,11 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +23,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var campoIp: EditText
     private lateinit var campoNombre: EditText
     private lateinit var campoFps: EditText
+    private lateinit var campoOrientacion: Spinner
     private lateinit var estado: TextView
 
     private val pedirPermisos = registerForActivityResult(
@@ -62,6 +65,19 @@ class MainActivity : ComponentActivity() {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(prefs.getInt("fps", 10).toString())
         }
+        campoOrientacion = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@MainActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                listOf(
+                    "Orientación: automática",
+                    "Orientación: vertical",
+                    "Orientación: horizontal (girado a la izquierda)",
+                    "Orientación: horizontal (girado a la derecha)"
+                )
+            )
+            setSelection(prefs.getInt("orientacion", 0))
+        }
         val botonIniciar = Button(this).apply {
             text = "Iniciar cámara"
             setOnClickListener { pedir() }
@@ -84,7 +100,7 @@ class MainActivity : ComponentActivity() {
             setPadding(0, pad, 0, 0)
         }
 
-        listOf(titulo, campoIp, campoNombre, campoFps, botonIniciar, botonDetener, botonBateria, estado)
+        listOf(titulo, campoIp, campoNombre, campoFps, campoOrientacion, botonIniciar, botonDetener, botonBateria, estado)
             .forEach { raiz.addView(it) }
         setContentView(raiz)
     }
@@ -103,15 +119,18 @@ class MainActivity : ComponentActivity() {
         val ip = campoIp.text.toString().trim()
         val nombre = campoNombre.text.toString().trim().ifEmpty { "celular1" }
         val fps = (campoFps.text.toString().toIntOrNull() ?: 10).coerceIn(1, 25)
+        val orientacion = campoOrientacion.selectedItemPosition
         getSharedPreferences("mecam", Context.MODE_PRIVATE).edit()
             .putString("ip", ip)
             .putString("nombre", nombre)
             .putInt("fps", fps)
+            .putInt("orientacion", orientacion)
             .apply()
         val intent = Intent(this, CamaraService::class.java)
             .putExtra("ip", ip)
             .putExtra("nombre", nombre)
             .putExtra("fps", fps)
+            .putExtra("orientacion", orientacion)
         ContextCompat.startForegroundService(this, intent)
         estado.text = "Cámara iniciada. Ya puedes apagar la pantalla."
     }

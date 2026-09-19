@@ -15,6 +15,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Size
+import android.view.OrientationEventListener
+import android.view.Surface
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -59,6 +61,10 @@ class CamaraService : LifecycleService() {
     private var ip = ""
     private var nombre = "celular1"
     private var fps = 10
+    private var orientacion = 0   // 0 automática, 1 vertical, 2 horizontal (izquierda), 3 horizontal (derecha)
+    @Volatile private var rotacionAuto = Surface.ROTATION_0
+    private var analisisActual: ImageAnalysis? = null
+    private var sensorGiro: OrientationEventListener? = null
     private var detenido = false
 
     @Volatile private var conectado = false
@@ -74,6 +80,9 @@ class CamaraService : LifecycleService() {
         nombre = intent?.getStringExtra("nombre") ?: prefs.getString("nombre", "celular1") ?: "celular1"
         val fpsPedido = intent?.getIntExtra("fps", -1) ?: -1
         fps = (if (fpsPedido > 0) fpsPedido else prefs.getInt("fps", 10)).coerceIn(1, 25)
+        val orientPedida = intent?.getIntExtra("orientacion", -1) ?: -1
+        orientacion = if (orientPedida >= 0) orientPedida else prefs.getInt("orientacion", 0)
+        analisisActual?.targetRotation = rotacionActual()
 
         crearCanal()
         val notif = crearNotificacion("Iniciando...")
@@ -92,6 +101,7 @@ class CamaraService : LifecycleService() {
         if (cliente == null) {
             cliente = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
             conectar()
+            iniciarSensorGiro()
             iniciarCamara()
             vigilarTemperatura()
         }
@@ -152,6 +162,8 @@ class CamaraService : LifecycleService() {
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
+        analisis.targetRotation = rotacionActual()
+        analisisActual = analisis
         analisis.setAnalyzer(ejecutor) { imagen -> procesar(imagen) }
         try {
             p.unbindAll()
@@ -159,6 +171,31 @@ class CamaraService : LifecycleService() {
         } catch (e: Exception) {
             actualizarNotificacion("Error de cámara: ${e.message}")
         }
+    }
+
+    private fun rotacionActual(): Int = when (orientacion) {
+        1 -> Surface.ROTATION_0
+        2 -> Surface.ROTATION_90
+        3 -> Surface.ROTATION_270
+        else -> rotacionAuto
+    }
+
+    // Detecta cómo está puesto el celular (vertical u horizontal) con el sensor de movimiento
+    private fun iniciarSensorGiro() {
+        val sensor = object : OrientationEventListener(this) {
+            override fun onOrientationChanged(grados: Int) {
+                if (grados == OrientationEventListener.ORIENTATION_UNKNOWN) return
+                rotacionAuto = when (grados) {
+                    in 45..134 -> Surface.ROTATION_270
+                    in 135..224 -> Surface.ROTATION_180
+                    in 225..314 -> Surface.ROTATION_90
+                    else -> Surface.ROTATION_0
+                }
+                if (orientacion == 0) analisisActual?.targetRotation = rotacionAuto
+            }
+        }
+        if (sensor.canDetectOrientation()) sensor.enable()
+        sensorGiro = sensor
     }
 
     private fun procesar(imagen: ImageProxy) {
@@ -245,6 +282,7 @@ class CamaraService : LifecycleService() {
     override fun onDestroy() {
         detenido = true
         principal.removeCallbacksAndMessages(null)
+        sensorGiro?.disable()
         proveedor?.unbindAll()
         ws?.close(1000, null)
         cliente?.dispatcher?.executorService?.shutdown()
