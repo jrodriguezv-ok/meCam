@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - 'servidor/**'
       - 'herramientas/**'
+      - 'docs/**'
       - '**.md'
       - '.gitignore'
       - '.github/**'

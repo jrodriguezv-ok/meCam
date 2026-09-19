@@ -4,6 +4,12 @@ Convierte celulares Android viejos en cámaras de seguridad con detección de pe
 
 **¿Dudas?** Mira las [preguntas frecuentes](FAQ.md): cómo ver las cámaras desde fuera de casa, cómo evitar el calor, qué hacer si algo falla y más.
 
+## Vista previa
+
+![Vista previa del centro de control de MeCam](docs/vista-previa/00-vista-previa.png)
+
+*Imágenes de cámaras simuladas; la interfaz es la real.* Las capturas sueltas están en [`docs/vista-previa`](docs/vista-previa).
+
 ## Cómo funciona
 
 1. **App MeCam (Android):** corre en segundo plano (con la pantalla apagada) y transmite video de forma constante a la computadora. Si el celular se calienta, baja la velocidad y, si sigue subiendo, se pausa hasta que se enfríe. Detecta si el celular está vertical u horizontal y adapta la imagen.
