@@ -70,7 +70,9 @@ class Grabador:
     def __init__(self, carpeta=None, al_guardar=None):
         self.carpeta = carpeta or carpeta_grabaciones()
         os.makedirs(self.carpeta, exist_ok=True)
-        self.activo = bool(leer_config().get("grabar", True))
+        cfg = leer_config()
+        self.activo = bool(cfg.get("grabar", True))
+        self.excluidas = set(cfg.get("sin_grabar", []))   # cámaras que el usuario decidió no grabar
         self.al_guardar = al_guardar          # función(texto) para anotar en la actividad
         self.buffers = {}                     # cámara -> cuadros recientes (antes de detectar)
         self.seguidos = {}                    # cámara -> cuadros seguidos con persona
@@ -89,6 +91,26 @@ class Grabador:
                 self.sesiones.clear()
         guardar_config({"grabar": self.activo})
 
+    def graba(self, camara):
+        return self.activo and camara not in self.excluidas
+
+    def grabando(self, camara):
+        """¿Hay un clip grabándose ahora mismo en esta cámara?"""
+        with self.lock:
+            return camara in self.sesiones
+
+    def set_camara(self, camara, valor):
+        """Elige si esta cámara graba (True) o no (False), sin cambiar el interruptor general."""
+        with self.lock:
+            if valor:
+                self.excluidas.discard(camara)
+            else:
+                self.excluidas.add(camara)
+                s = self.sesiones.pop(camara, None)
+                if s is not None:
+                    self.cola.put(s)
+        guardar_config({"sin_grabar": sorted(self.excluidas)})
+
     def agregar(self, camara, jpg, conteo, ahora=None):
         """Recibe cada cuadro procesado (con recuadros) y decide si hay que grabar."""
         ahora = time.time() if ahora is None else ahora
@@ -100,7 +122,7 @@ class Grabador:
                 buf.append((ahora, jpg))
                 while buf and ahora - buf[0][0] > PRE_SEG:
                     buf.popleft()
-                if not self.activo:
+                if not self.activo or camara in self.excluidas:
                     self.seguidos[camara] = 0
                     return
                 self.seguidos[camara] = self.seguidos.get(camara, 0) + 1 if hay else 0
@@ -224,8 +246,8 @@ class Grabador:
 
     def resumen(self):
         metas = self._metas()
-        return {"activo": self.activo, "carpeta": self.carpeta, "usado": sum(m["tam"] for m in metas),
-                "limite": int(LIMITE_GB * 1e9), "dias": DIAS_MAX}
+        return {"activo": self.activo, "excluidas": sorted(self.excluidas), "carpeta": self.carpeta,
+                "usado": sum(m["tam"] for m in metas), "limite": int(LIMITE_GB * 1e9), "dias": DIAS_MAX}
 
     def _valido(self, id_):
         return bool(re.fullmatch(r"[\w\- ]+", id_ or ""))
@@ -358,6 +380,14 @@ main{padding:16px 18px 30px}
 }
 #dockM .fab::after{top:auto;bottom:calc(100% + 12px)}
 @media (max-width:700px){.flecha{width:44px;height:44px}.flecha.izq{left:6px}.flecha.der{right:6px}}
+.sw{display:inline-flex;align-items:center;gap:9px;cursor:pointer;color:var(--suave);font-size:14px;position:relative;user-select:none}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw .pista{width:44px;height:25px;border-radius:999px;background:var(--panel2);border:1px solid var(--borde);position:relative;transition:background .2s,border-color .2s}
+.sw .pista::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:var(--suave);transition:left .2s,background .2s}
+.sw input:checked + .pista{background:rgba(239,68,68,.22);border-color:#ef4444}
+.sw input:checked + .pista::after{left:21px;background:#f87171}
+.sw input:focus-visible + .pista{outline:2px solid var(--acento);outline-offset:2px}
+.sw:hover{color:var(--texto)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
 <!--SPRITE-->
@@ -365,6 +395,7 @@ main{padding:16px 18px 30px}
   <a class="fab" href="/ver" data-i="volver" data-tip="Volver al centro de control" aria-label="Volver al centro de control"></a>
   <h1><span data-i="grabaciones"></span>MeCam<small>Grabaciones</small></h1>
   <span class="espacio"></span>
+  <label class="sw" title="Grabar un clip cuando se detecte una persona"><input type="checkbox" id="swGrabar" checked><span class="pista"></span><span>Grabar clips</span></label>
   <select id="filtro" title="Filtrar por cámara" aria-label="Filtrar por cámara"><option value="">Todas las cámaras</option></select>
 </header>
 <main>
@@ -432,10 +463,12 @@ function pintar() {
   });
   $('#vacio').style.display = lista.length ? 'none' : 'block';
   var av = $('#aviso');
-  if (resumen.activo === false) { av.style.display = 'block'; av.textContent = 'La grabación está desactivada. Actívala en la ventana de MeCam (casilla «Grabar un clip…»).'; }
+  if (resumen.activo === false) { av.style.display = 'block'; av.textContent = 'La grabación de clips está desactivada: no se guardarán clips nuevos. Actívala con el interruptor de arriba.'; }
   else av.style.display = 'none';
   $('#resumen').textContent = lista.length + (lista.length === 1 ? ' clip' : ' clips') + ' · ' + fmtTam(resumen.usado || 0) +
-    ' usados de ' + fmtTam(resumen.limite || 0) + ' · se borran solos los de más de ' + (resumen.dias || 30) + ' días';
+    ' usados de ' + fmtTam(resumen.limite || 0) + ' · se borran solos los de más de ' + (resumen.dias || 30) + ' días' +
+    (resumen.excluidas && resumen.excluidas.length ? ' · no graban: ' + resumen.excluidas.join(', ') : '');
+  $('#swGrabar').checked = resumen.activo !== false;
 }
 
 function cargar() {
@@ -474,6 +507,11 @@ function borrar() {
 }
 
 $('#filtro').addEventListener('change', pintar);
+$('#swGrabar').addEventListener('change', function () {
+  var quiere = this.checked;
+  fetch('/api/grabacion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: quiere }) })
+    .then(function (r) { if (!r.ok) throw new Error(); return cargar(); }).catch(function () { cargar(); });
+});
 $('#mCer').addEventListener('click', cerrar);
 $('#mPrev').addEventListener('click', function () { mover(-1); });
 $('#mNext').addEventListener('click', function () { mover(1); });

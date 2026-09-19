@@ -54,7 +54,7 @@ Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCa
 - [x] Centro de control en el navegador (cuadrícula automática, ampliar, zoom, fotos, alertas y actividad)
 - [x] Nombres únicos por cámara y limpieza automática de cámaras desconectadas
 - [ ] Audio
-- [x] Grabación de clips cuando se detecta una persona (se borran solos los viejos)
+- [x] Grabación de clips cuando se detecta una persona (optativa: se activa o desactiva y se elige por cámara; se borran solos los viejos)
 - [x] Centro de control con botones flotantes, íconos nuevos y atajos de teclado
 - [ ] Zonas de alerta
 - [x] Vinculación por QR: un código distinto y de un solo uso por dispositivo, con conexión cifrada

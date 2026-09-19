@@ -443,6 +443,19 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   #reloj{display:none}
   .mini{width:104px;height:64px}
 }
+.rec{
+  display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 8px;
+  border-radius:999px;background:#0008;border:1px solid #fff3;color:var(--suave);cursor:pointer;pointer-events:auto;
+}
+.rec::before{content:"";width:8px;height:8px;border-radius:50%;border:2px solid currentColor;box-sizing:border-box}
+.rec:hover{border-color:var(--acento)}
+.rec.grabando{color:#fff;background:rgba(239,68,68,.88);border-color:#ef4444}
+.rec.grabando::before{background:#fff;border-color:#fff;animation:latido 1s ease-in-out infinite}
+.rec.lista{color:#fca5a5;border-color:rgba(239,68,68,.55)}
+.rec.excluida{color:#94a3b8;text-decoration:line-through}
+.rec.off{display:none}
+.fab.rec-on{background:rgba(239,68,68,.16);border-color:#ef4444;color:#f87171;box-shadow:0 0 18px rgba(239,68,68,.4)}
+@media (max-width:700px){#dock{gap:6px;padding:7px}.fab{width:42px;height:42px}.fab svg{width:24px;height:24px}}
 /* el espacio para los botones flotantes va al final para ganarle a la regla base de #grid */
 @media (min-width:701px){#grid{padding-right:86px}}
 @media (max-width:700px){#grid{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
@@ -461,6 +474,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
 
 <nav id="dock" aria-label="Acciones del centro de control">
   <a class="fab" href="/grabaciones" data-i="grabaciones" data-tip="Grabaciones (G)" aria-label="Grabaciones"></a>
+  <button class="fab" id="bRec" data-i="rec" data-tip="Grabación de clips (Q)" aria-label="Grabación de clips" aria-pressed="true"></button>
   <button class="fab" id="bAct" data-i="actividad" data-tip="Actividad (A)" aria-label="Actividad"><i class="punto-nuevo" id="badgeAct"></i></button>
   <button class="fab" id="bSonido" data-i="campana_off" data-tip="Alerta sonora (S)" aria-label="Alerta sonora" aria-pressed="false"></button>
   <button class="fab" id="bRaw" data-i="recuadro" data-tip="Ver sin recuadros (R)" aria-label="Ver sin recuadros" aria-pressed="false"></button>
@@ -493,6 +507,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     <strong id="focoNombre"></strong>
     <span class="estado sin" id="focoEstado">SIN SEÑAL</span>
     <span class="chips" id="focoChips"></span>
+    <span class="rec off" id="focoRec">REC</span>
     <span class="espacio"></span>
   </div>
   <div id="focoCuerpo">
@@ -540,6 +555,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   let enLinea = null;               // null = todavía sin dato
   let eventosPrev = -1;
   let eventosVistos = -1;           // hasta qué evento ya vio la persona (para el punto rojo)
+  let grabacionActiva = true;       // interruptor general de la grabación de clips
   const foco = { nombre: null, zoom: 1, x: 0, y: 0 };
 
   function urlStream(n, extra) {
@@ -594,6 +610,18 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     });
   }
 
+  // ---- Indicador REC de cada cámara (también es el selector de esa cámara)
+  const TXT_REC = {
+    grabando: 'Grabando un clip ahora. Toca para dejar de grabar esta cámara',
+    lista: 'Esta cámara graba un clip cuando detecta una persona. Toca para dejar de grabarla',
+    excluida: 'Esta cámara no graba. Toca para volver a grabarla'
+  };
+  function pintarRecPill(el, estado) {
+    el.className = 'rec ' + (estado || 'off');
+    el.title = TXT_REC[estado] || '';
+    el.setAttribute('aria-label', el.title);
+  }
+
   // ---- Cada cámara es una "ficha" de la cuadrícula
   function crearTile(nombre) {
     const el = document.createElement('div');
@@ -601,7 +629,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     el.tabIndex = 0;
     el.innerHTML =
       '<img class="video" alt="">' +
-      '<div class="arriba"><span class="nombre"></span><span class="estado sin">SIN SEÑAL</span></div>' +
+      '<div class="arriba"><span class="nombre"></span><span class="estado sin">SIN SEÑAL</span><span class="rec off">REC</span></div>' +
       '<div class="acciones">' +
         '<button class="ic" data-a="foto" title="Capturar foto" aria-label="Capturar foto">' + svg('camara') + '</button>' +
         '<button class="ic" data-a="ampliar" title="Ampliar" aria-label="Ampliar">' + svg('ampliar') + '</button>' +
@@ -610,11 +638,12 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     const t = {
       el: el, nombre: nombre,
       img: el.querySelector('img'), nom: el.querySelector('.nombre'), est: el.querySelector('.estado'),
-      chips: el.querySelector('.chips'), meta: el.querySelector('.meta'), personas: false
+      chips: el.querySelector('.chips'), meta: el.querySelector('.meta'), rec: el.querySelector('.rec'), personas: false
     };
     t.nom.textContent = nombre;
     t.img.alt = 'Cámara ' + nombre;
     el.addEventListener('click', function (e) {
+      if (e.target.closest('.rec')) { e.stopPropagation(); alternarRecCamara(nombre); return; }
       const b = e.target.closest('button');
       if (b && b.dataset.a === 'foto') { e.stopPropagation(); capturar(nombre); return; }
       abrirFoco(nombre);
@@ -635,6 +664,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     t.el.classList.toggle('alerta', vivo && personas > 0);
     pintarChips(t.chips, vivo ? c.conteo : {});
     t.meta.textContent = vivo ? (c.fps.toFixed(1) + ' fps · ' + c.res) : 'sin imágenes recientes';
+    pintarRecPill(t.rec, c.rec);
   }
 
   // ---- Distribución de la cuadrícula
@@ -711,6 +741,8 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   // ---- Estado del servidor (se consulta cada segundo)
   function procesarEstado(d) {
     camaras = d.camaras || [];
+    grabacionActiva = d.grabacion !== false;
+    pintarRec();
     const nombres = new Set(camaras.map(function (c) { return c.nombre; }));
     let cambio = false;
 
@@ -873,6 +905,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     e.textContent = vivo ? 'EN VIVO' : 'SIN SEÑAL';
     e.className = 'estado ' + (vivo ? 'vivo' : 'sin');
     pintarChips($('#focoChips'), vivo ? c.conteo : {});
+    pintarRecPill($('#focoRec'), c.rec);
   }
 
   function cargarFoco() {
@@ -968,6 +1001,38 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   }
   $('#bAct').onclick = function () { alternarActividad(); };
   $('#aCerrar').onclick = function () { alternarActividad(false); };
+  // ---- Grabación de clips: interruptor general (botón de la barra) y selector por cámara (indicador REC)
+  function pintarRec() {
+    const b = $('#bRec');
+    b.classList.toggle('rec-on', grabacionActiva);
+    b.setAttribute('aria-pressed', String(grabacionActiva));
+    b.dataset.tip = grabacionActiva ? 'Grabación de clips: activada (Q)' : 'Grabación de clips: desactivada (Q)';
+    cambiarIcono(b, grabacionActiva ? 'rec' : 'rec_off');
+  }
+  function ponerGrabacion(cuerpo, mensaje) {
+    return fetch('/api/grabacion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function (d) { grabacionActiva = d.activo; pintarRec(); aviso(mensaje(d)); return d; })
+      .catch(function () { aviso('No se pudo cambiar la grabación'); });
+  }
+  function alternarRecCamara(nombre) {
+    if (!grabacionActiva) { aviso('La grabación de clips está desactivada: actívala con el botón de la barra'); return; }
+    const c = camaras.find(function (x) { return x.nombre === nombre; });
+    const quiere = !c || c.rec === 'excluida';
+    ponerGrabacion({ camara: nombre, activo: quiere }, function () {
+      return quiere ? nombre + ': grabará clips' : nombre + ': ya no grabará clips';
+    }).then(function () {
+      if (!c) return;
+      c.rec = quiere ? 'lista' : 'excluida';
+      const t = tiles.get(nombre);
+      if (t) actualizarTile(t, c);
+      if (foco.nombre === nombre) infoFoco(c);
+    });
+  }
+  $('#bRec').onclick = function () {
+    ponerGrabacion({ activo: !grabacionActiva }, function (d) { return d.activo ? 'Grabación de clips activada' : 'Grabación de clips desactivada'; });
+  };
+  $('#focoRec').onclick = function () { if (foco.nombre) alternarRecCamara(foco.nombre); };
   function iconosPantalla() {
     const n = document.fullscreenElement ? 'reducir' : 'ampliar';
     cambiarIcono($('#bPantalla'), n);
@@ -1024,6 +1089,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
       else if (k === 'l') siguienteLayout();
       else if (k === 'f') pantallaCompleta(document.documentElement);
       else if (k === 'g') location.href = '/grabaciones';
+      else if (k === 'q') $('#bRec').click();
     }
   });
   window.addEventListener('resize', layout);
@@ -1148,6 +1214,15 @@ def procesar(model, datos):
     return (buf.tobytes() if ok else None), conteo, f"{ancho}x{alto}"
 
 
+def estado_rec(nombre):
+    """Qué muestra el indicador REC de una cámara: grabando / lista / excluida / off."""
+    if not grabador.activo:
+        return "off"
+    if nombre in grabador.excluidas:
+        return "excluida"
+    return "grabando" if grabador.grabando(nombre) else "lista"
+
+
 def registrar_detecciones(cam, conteo, ahora):
     """Anota en la actividad cuando aparece algo nuevo (con un descanso para no repetir)."""
     for etiqueta, cantidad in conteo.items():
@@ -1181,10 +1256,11 @@ async def estado(request):
             "res": c.res,
             "conteo": c.conteo,
             "conectada_hace": int(ahora - c.desde),
+            "rec": estado_rec(c.nombre),
         })
     total = eventos[0]["id"] if eventos else 0
     return web.json_response(
-        {"ip": IP_LOCAL, "camaras": lista, "eventos": list(eventos)[:40], "total_eventos": total},
+        {"ip": IP_LOCAL, "grabacion": grabador.activo, "camaras": lista, "eventos": list(eventos)[:40], "total_eventos": total},
         headers={"Cache-Control": "no-store"},
     )
 
@@ -1241,6 +1317,23 @@ async def api_grabaciones(request):
     datos = grabador.resumen()
     datos["clips"] = grabador.listar()
     return web.json_response(datos, headers={"Cache-Control": "no-store"})
+
+
+async def api_grabacion(request):
+    """Interruptor de la grabación: general ({"activo": true}) o de una cámara ({"camara": "Entrada", "activo": false})."""
+    try:
+        datos = await request.json()
+    except Exception:
+        raise web.HTTPBadRequest()
+    activo = bool(datos.get("activo"))
+    camara = datos.get("camara")
+    if camara is None:
+        grabador.set_activo(activo)
+        evento("Grabación de clips " + ("activada" if activo else "desactivada"))
+    else:
+        grabador.set_camara(str(camara)[:40], activo)
+        evento(f"{camara}: " + ("grabará clips" if activo else "ya no grabará clips"))
+    return web.json_response({"activo": grabador.activo, "excluidas": sorted(grabador.excluidas)})
 
 
 async def api_borrar(request):
@@ -1384,6 +1477,7 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
         web.get("/grabaciones", pagina_grabaciones),
         web.get("/api/grabaciones", api_grabaciones),
         web.delete("/api/grabaciones/{id}", api_borrar),
+        web.post("/api/grabacion", api_grabacion),
         web.get("/miniatura/{id}", miniatura),
         web.get("/clip/{id}", clip),
         web.get("/archivo/{id}", archivo),

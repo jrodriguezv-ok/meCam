@@ -60,11 +60,19 @@ Los botones están en una **barra flotante**: a la derecha en la computadora y a
 | Botón | Qué hace | Tecla |
 |---|---|---|
 | Grabaciones | Abre la página con los clips guardados | **G** |
+| Grabación de clips | Interruptor general: **rojo** = activada, **punteado** = desactivada | **Q** |
 | Actividad | Historial con un ícono por tipo de aviso. Un **punto rojo** te avisa si hay algo nuevo | **A** |
 | Alerta sonora | Suena un aviso cuando aparece una persona (la campana se ve tachada cuando está apagada) | **S** |
 | Sin recuadros | Muestra el video original, sin los recuadros de detección | **R** |
 | Distribución | Cambia entre automática, 1, 2 y 3 columnas. La letra o el número en la esquina del botón indica cuál está activa | **L** |
 | Pantalla completa | Para dejarlo como un panel de vigilancia | **F** |
+
+**Indicador REC en cada cámara:** junto al nombre de cada cámara aparece un indicador que también es su selector. Tócalo para elegir si esa cámara graba.
+
+- **REC rojo y palpitante:** está grabando un clip ahora mismo.
+- **REC con borde:** está lista y grabará cuando detecte una persona.
+- **REC tachado:** esa cámara no graba (la elegiste tú).
+- Si la grabación general está desactivada, los indicadores se ocultan.
 
 **Ampliar una cámara:** haz clic (o toca) sobre ella. Aparecen flechas grandes a los lados para pasar a la anterior o la siguiente (también con **←** y **→**) y miniaturas abajo. **Esc** cierra la vista ampliada.
 
@@ -265,9 +273,18 @@ En la carpeta `grabaciones` dentro de `%APPDATA%\MeCam` (en la ventana de MeCam,
 
 Depende de la escena; no lo medí con el detector real, pero son clips cortos. Para que nunca se llene el disco, MeCam **borra solo** los clips de más de **30 días** y, si el total pasa de **5 GB**, los más antiguos. Arriba de la página de grabaciones ves cuánto espacio llevas usado.
 
-### ¿Puedo desactivar la grabación?
+### ¿Puedo elegir si se graba y qué cámaras graban?
 
-Sí: en la ventana de MeCam desmarca **Grabar un clip cuando se detecte una persona**. Se recuerda al reiniciar. La página de grabaciones te avisa cuando está desactivada.
+Sí, la grabación es **optativa** y viene **activada**. Hay dos niveles:
+
+**Interruptor general** (graba o no graba nada). Hay tres lugares y los tres están sincronizados:
+- En la ventana de MeCam, la casilla **Grabar un clip cuando se detecte una persona**.
+- En el centro de control, el botón redondo de la barra flotante (tecla **Q**). Rojo = activada, punteado = desactivada.
+- En la página de grabaciones, el interruptor **Grabar clips** de arriba.
+
+**Selector por cámara** (por ejemplo, no grabar la del dormitorio): en el centro de control, toca el indicador **REC** junto al nombre de la cámara (mira «¿Cómo uso el visor?»). También funciona en la vista ampliada, y la página de grabaciones te dice cuáles no graban.
+
+Las dos elecciones se recuerdan al reiniciar. La elección por cámara se guarda con el **nombre** de la cámara: si la renombras, vuelve a grabar y tendrás que elegirlo otra vez. Apagar la grabación no borra los clips que ya tienes.
 
 ### ¿Con qué programa abro los archivos descargados?
 
@@ -369,7 +386,7 @@ Casi seguro el sistema cerró la app para ahorrar batería. Repite el paso de **
 
 ### No se guardan clips
 
-1. Comprueba que la casilla **Grabar un clip cuando se detecte una persona** esté marcada en la ventana de MeCam.
+1. Comprueba que la grabación esté activada (casilla en la ventana de MeCam, botón rojo en el centro de control o interruptor en la página de grabaciones) y que la cámara no tenga el **REC tachado**.
 2. Solo se graba cuando hay una **persona** visible en dos cuadros seguidos; autos y otros objetos no disparan la grabación.
 3. Si la cámara se desconecta o detienes el servidor en pleno clip, se guarda lo que había grabado.
 4. Abre **Abrir carpeta**: si ahí hay archivos pero la página no los muestra, recárgala. Si la carpeta no se abre o el disco está lleno, mira el recuadro **Detalles** de la ventana de MeCam.

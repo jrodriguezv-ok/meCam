@@ -46,6 +46,8 @@ ICONOS = {
     "volver": ("arrow-left", "bold"),
     "play": ("play-circle", "duotone"),
     "celular": ("device-mobile", "duotone"),
+    "rec": ("record", "duotone"),
+    "rec_off": ("circle-dashed", "bold"),
 }
 
 

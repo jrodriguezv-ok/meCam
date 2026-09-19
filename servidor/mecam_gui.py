@@ -332,6 +332,8 @@ class App:
             ("Sin vincular: " + ", ".join(libres) + ". Usa «Vincular dispositivo» para protegerlas.") if libres else "")
 
     def _refrescar_estado(self):
+        if self.var_grabar.get() != self.mod.grabador.activo:     # cambiado desde el centro de control
+            self.var_grabar.set(self.mod.grabador.activo)
         if self.registro.proteccion:
             self.lbl_estado.config(text="● En marcha  ·  Protegido: solo entran dispositivos vinculados",
                                    fg="#22c55e")
