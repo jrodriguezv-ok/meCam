@@ -28,7 +28,13 @@ jobs:
           MECAM_KEYSTORE_PASSWORD: ${{ secrets.MECAM_KEYSTORE_PASSWORD }}
           MECAM_KEY_ALIAS: ${{ secrets.MECAM_KEY_ALIAS }}
           MECAM_KEY_PASSWORD: ${{ secrets.MECAM_KEY_PASSWORD }}
-        run: gradle assembleRelease --no-daemon
+        shell: bash
+        run: gradle assembleRelease --no-daemon 2>&1 | tee build.log
+      - name: Resumen de errores
+        if: failure()
+        run: |
+          msg=$(grep -E "^e: |What went wrong|Execution failed|error:|FAILURE" -A4 build.log | head -40 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=Errores de Gradle::$msg"
       - name: Renombrar APK
         run: cp app/build/outputs/apk/release/app-release.apk MeCam.apk
       - name: Publicar en Releases
