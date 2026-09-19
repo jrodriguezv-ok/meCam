@@ -7,3 +7,8 @@ certificado.pem
 clave.pem
 *.pt
 __pycache__/
+
+# MeCam (servidor)
+.instalado
+mecam.log
+mecam_error.log

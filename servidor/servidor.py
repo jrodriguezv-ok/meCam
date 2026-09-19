@@ -15,6 +15,7 @@ import os
 import re
 import socket
 import ssl
+import threading
 import time
 from collections import deque
 
@@ -48,6 +49,7 @@ eventos = deque(maxlen=100)  # registro de actividad (lo más nuevo primero)
 _id_evento = itertools.count(1)
 _id_cuadro = itertools.count(1)
 IP_LOCAL = "127.0.0.1"
+parando = False             # True mientras el servidor se está deteniendo
 
 
 class Camara:
@@ -986,7 +988,7 @@ async def stream(request):
     ultimo_n = -1
     ausente_desde = None
     try:
-        while True:
+        while not parando:
             cam = camaras.get(nombre)
             if cam is None:
                 # el celular se desconectó (o se está reconectando): se espera un momento antes de cortar
@@ -1116,9 +1118,11 @@ def crear_certificado(ip):
     return ruta_cert, ruta_clave
 
 
-async def iniciar(ctx, ip):
-    global IP_LOCAL
+async def iniciar(ctx, ip, parar=None, al_arrancar=None):
+    """Levanta el servidor. Sin 'parar' corre hasta Ctrl+C; con 'parar' termina cuando se activa."""
+    global IP_LOCAL, parando
     IP_LOCAL = ip
+    parando = False
     app = web.Application()
     app.add_routes([
         web.get("/", pagina_camara),
@@ -1130,16 +1134,91 @@ async def iniciar(ctx, ip):
     ])
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, "0.0.0.0", PORT, ssl_context=ctx).start()
-    await web.TCPSite(runner, "0.0.0.0", PORT_HTTP).start()
-    print("=" * 50)
-    print("MeCam")
-    print(f"En el CELULAR (navegador): https://{ip}:{PORT}")
-    print(f"En la APP de Android, IP:  {ip}")
-    print(f"Centro de control:         https://localhost:{PORT}/ver")
-    print("=" * 50)
-    while True:
-        await asyncio.sleep(1)
+    try:
+        await web.TCPSite(runner, "0.0.0.0", PORT, ssl_context=ctx).start()
+        await web.TCPSite(runner, "0.0.0.0", PORT_HTTP).start()
+        print("=" * 50)
+        print("MeCam")
+        print(f"En el CELULAR (navegador): https://{ip}:{PORT}")
+        print(f"En la APP de Android, IP:  {ip}")
+        print(f"Centro de control:         https://localhost:{PORT}/ver")
+        print("=" * 50)
+        if al_arrancar:
+            al_arrancar()
+        if parar is None:
+            while True:
+                await asyncio.sleep(1)
+        else:
+            await parar.wait()
+    finally:
+        parando = True
+        for c in list(camaras.values()):
+            await c.cerrar()
+        camaras.clear()
+        try:
+            await asyncio.wait_for(runner.cleanup(), 8)
+        except Exception:
+            pass
+
+
+class Servidor:
+    """Arranca y detiene el servidor en segundo plano (lo usa la ventana de MeCam)."""
+
+    def __init__(self):
+        self.hilo = None
+        self.loop = None
+        self.parar = None
+        self.listo = threading.Event()
+        self.error = None
+        self.ip = ""
+        self.corriendo = False
+
+    def iniciar(self):
+        """Arranca el servidor. Devuelve True si quedó funcionando."""
+        if self.corriendo:
+            return True
+        self.error = None
+        self.listo.clear()
+        self.hilo = threading.Thread(target=self._hilo, daemon=True)
+        self.hilo.start()
+        self.listo.wait()
+        return self.error is None and self.corriendo
+
+    def detener(self):
+        if self.loop is not None and self.parar is not None:
+            try:
+                self.loop.call_soon_threadsafe(self.parar.set)
+            except RuntimeError:
+                pass
+        if self.hilo is not None:
+            self.hilo.join(timeout=15)
+        self.corriendo = False
+
+    def _hilo(self):
+        try:
+            asyncio.run(self._main())
+        except Exception as e:
+            self.error = e
+            print(f"[!] Error del servidor: {e}")
+        finally:
+            self.corriendo = False
+            self.listo.set()
+
+    async def _main(self):
+        self.loop = asyncio.get_running_loop()
+        self.parar = asyncio.Event()
+        self.ip = ip_local()
+        print("Cargando el modelo de detección (la primera vez se descarga y puede tardar)...")
+        await self.loop.run_in_executor(None, YOLO, MODELO)
+        ruta_cert, ruta_clave = crear_certificado(self.ip)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(ruta_cert, ruta_clave)
+
+        def listo():
+            self.corriendo = True
+            self.listo.set()
+
+        await iniciar(ctx, self.ip, self.parar, listo)
 
 
 def main():

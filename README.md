@@ -21,13 +21,14 @@ La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android 
 
 ## Ejecutar el servidor (Windows)
 
-```
-cd servidor
-python -m pip install -r requirements.txt
-python servidor.py
-```
+1. Instala **Python** desde `python.org/downloads` y marca la casilla **Add python.exe to PATH**.
+2. Descarga el proyecto (en esta página, **Code** y luego **Download ZIP**) y extráelo. Abre la carpeta `servidor`.
+3. Haz doble clic en **Iniciar MeCam.bat**. La primera vez instala lo necesario y tarda varios minutos.
+4. En la ventana de MeCam, haz clic en el botón verde **Iniciar servidor**.
 
-Abre `https://localhost:8443/ver` en la computadora para ver las cámaras. La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, revisa las [preguntas frecuentes](FAQ.md) (suele ser el firewall de Windows).
+La ventana muestra la IP que hay que escribir en la app de los celulares y abre el centro de control (`https://localhost:8443/ver`). La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, usa el botón **Abrir puertos del firewall** (una sola vez) o revisa las [preguntas frecuentes](FAQ.md).
+
+Si prefieres la terminal: `cd servidor`, `python -m pip install -r requirements.txt` y `python servidor.py`.
 
 ## Estado del proyecto
 
@@ -37,6 +38,7 @@ Abre `https://localhost:8443/ver` en la computadora para ver las cámaras. La co
 - [x] Servicio en segundo plano y control de temperatura
 - [x] Orientación automática (vertical/horizontal)
 - [x] Actualización desde dentro de la app
+- [x] Ventana con botón verde para iniciar y detener el servidor
 - [x] Centro de control en el navegador (cuadrícula automática, ampliar, zoom, fotos, alertas y actividad)
 - [x] Nombres únicos por cámara y limpieza automática de cámaras desconectadas
 - [ ] Audio

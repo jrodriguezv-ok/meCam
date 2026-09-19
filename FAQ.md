@@ -23,13 +23,13 @@ MeCam funciona dentro de tu red: los celulares mandan el video a una computadora
 
 > Este método todavía **no fue probado** con MeCam, pero no requiere cambios en el programa.
 
-1. En la computadora donde corre `servidor.py`, entra a `tailscale.com/download`, descarga el instalador, instálalo y crea una cuenta (o inicia sesión).
+1. En la computadora donde corre MeCam, entra a `tailscale.com/download`, descarga el instalador, instálalo y crea una cuenta (o inicia sesión).
 2. En el celular con el que quieres mirar, abre **Play Store**, busca **Tailscale**, instálalo e inicia sesión con la **misma cuenta**.
 3. En la computadora, haz clic en el ícono de Tailscale (cerca del reloj, abajo a la derecha) y copia la dirección de la computadora. Empieza por `100.` (por ejemplo `100.101.102.103`).
 4. Cuando estés fuera de casa, abre **Tailscale** en el celular y enciende la conexión. Luego abre **Chrome** y escribe `https://100.101.102.103:8443/ver` (con tu dirección).
 5. Saldrá el aviso "Tu conexión no es privada". Toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**. Es normal, porque MeCam usa un certificado propio.
 
-Requisitos: la computadora debe estar **encendida**, con internet y con `servidor.py` ejecutándose. Los celulares cámara siguen en el Wi-Fi de casa.
+Requisitos: la computadora debe estar **encendida**, con internet y con el servidor en marcha. Los celulares cámara siguen en el Wi-Fi de casa.
 
 Tailscale tiene un plan gratuito para uso personal. Las condiciones pueden cambiar, así que revísalas en su sitio web.
 
@@ -39,7 +39,7 @@ Tailscale tiene un plan gratuito para uso personal. Las condiciones pueden cambi
 
 ### ¿Puedo ver las cámaras desde otro celular estando en casa?
 
-Sí. Conecta ese celular al mismo Wi-Fi, abre Chrome y entra a `https://IP-DE-LA-COMPUTADORA:8443/ver`. La IP aparece en la ventana negra del servidor, en la línea "En la COMPUTADORA abre".
+Sí. Conecta ese celular al mismo Wi-Fi, abre Chrome y entra a `https://IP-DE-LA-COMPUTADORA:8443/ver`. La dirección aparece en la ventana de MeCam, en el recuadro **Centro de control**.
 
 ### ¿Los celulares cámara pueden transmitir desde otra red o con datos móviles?
 
@@ -93,19 +93,15 @@ El servidor lo detecta en unos 20 segundos y lo desconecta: su ficha desaparece 
 ### ¿Cómo instalo y ejecuto el servidor en la computadora?
 
 1. Instala **Python** desde `python.org/downloads`. Marca la casilla **Add python.exe to PATH**.
-2. Descarga la carpeta `servidor` de este repositorio.
-3. Pulsa la tecla **Windows**, escribe `cmd` y pulsa **Enter**.
-4. Entra a la carpeta con `cd` (por ejemplo `cd Desktop\MEcam`).
-5. Escribe `python -m pip install -r requirements.txt` y pulsa **Enter**. Tarda unos minutos.
-6. Abre el puerto en el firewall: abre `cmd` **como administrador** y ejecuta estas dos líneas:
-   ```
-   netsh advfirewall firewall add rule name="MeCam" dir=in action=allow protocol=TCP localport=8443
-   netsh advfirewall firewall add rule name="MeCam8080" dir=in action=allow protocol=TCP localport=8080
-   ```
-7. Escribe `python servidor.py` y pulsa **Enter**. Deja esa ventana abierta.
-8. Abre `https://localhost:8443/ver` en Chrome para ver las cámaras.
+2. Descarga el proyecto: en la página del repositorio haz clic en **Code** y luego en **Download ZIP**. Haz clic derecho sobre el archivo descargado, luego **Extraer todo…** y **Extraer**.
+3. Abre la carpeta extraída y entra a la carpeta **servidor**.
+4. Haz doble clic en **Iniciar MeCam.bat**. Si Windows avisa "Windows protegió su PC", haz clic en **Más información** y luego en **Ejecutar de todos modos**.
+5. La primera vez se instala lo necesario en una ventana negra. Tarda varios minutos y no hay que cerrarla. Al terminar se abre la ventana de MeCam.
+6. En la ventana de MeCam haz clic en el botón verde **Iniciar servidor**. La primera vez descarga el modelo de detección y tarda un poco más.
+7. Haz clic en **Abrir puertos del firewall (una sola vez)** y, cuando Windows pregunte, haz clic en **Sí**. Solo hace falta la primera vez.
+8. La ventana muestra la **IP** que hay que escribir en la app de los celulares y abre el centro de control en el navegador.
 
-La primera vez descarga el modelo de detección, así que tarda un poco más.
+Deja la ventana de MeCam abierta (puedes minimizarla): al cerrarla se apagan las cámaras. Si prefieres la terminal, dentro de la carpeta `servidor` ejecuta `python servidor.py`.
 
 ### ¿Cómo se actualiza la app?
 
@@ -203,7 +199,7 @@ Esto no es asesoramiento legal. En general, grabar dentro de tu casa es distinto
 
 ### El celular dice "timed out" o "no se puede acceder al sitio"
 
-Casi siempre es el **firewall de Windows**. Abre `cmd` **como administrador** y ejecuta:
+Casi siempre es el **firewall de Windows**. En la ventana de MeCam haz clic en **Abrir puertos del firewall (una sola vez)** y en **Sí**. Si prefieres hacerlo a mano, abre `cmd` **como administrador** y ejecuta:
 
 ```
 netsh advfirewall firewall add rule name="MeCam" dir=in action=allow protocol=TCP localport=8443
@@ -227,8 +223,8 @@ Se instaló una versión de NumPy incompatible con YOLO. Ejecuta `python -m pip 
 ### La app dice "Reconectando..."
 
 La app no logra hablar con el servidor. Revisa en orden:
-1. `servidor.py` está corriendo (ventana negra abierta).
-2. La **IP** escrita en la app es la de la línea "En la APP de Android" del servidor.
+1. El servidor está en marcha (la ventana de MeCam dice **En marcha**).
+2. La **IP** escrita en la app es la que muestra la ventana de MeCam.
 3. El firewall permite el puerto **8080** (ver "timed out").
 4. El celular y la computadora están en el **mismo Wi-Fi**.
 
@@ -255,6 +251,14 @@ Desinstala la versión anterior de MeCam (mantén pulsado su ícono, **Desinstal
 ### El celular deja de transmitir después de un rato
 
 Casi seguro el sistema cerró la app para ahorrar batería. Repite el paso de **Ajustes de batería** de la sección "Calor, batería y segundo plano". Si la notificación de MeCam dice "En pausa por calor", el celular se está enfriando: espera o baja los cuadros por segundo.
+
+### La ventana de MeCam no se abre
+
+Abre la carpeta `servidor`: si hay un archivo `mecam_error.log`, contiene el motivo. Si la ventana se abre pero el servidor no arranca, mira el recuadro **Detalles** o el archivo `mecam.log`. Si falta algo por instalar, borra el archivo `.instalado` de la carpeta y vuelve a abrir **Iniciar MeCam.bat**.
+
+### Al hacer clic en "Iniciar servidor" dice que los puertos están en uso
+
+Hay otro MeCam abierto: la ventana negra de antes (`python servidor.py`) u otra ventana de MeCam. Ciérralo y vuelve a probar.
 
 ---
 
