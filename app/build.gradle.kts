@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -21,8 +23,8 @@ android {
 
     signingConfigs {
         create("mecam") {
-            if (rutaClave != null && java.io.File(rutaClave).exists()) {
-                storeFile = java.io.File(rutaClave)
+            if (rutaClave != null && File(rutaClave).exists()) {
+                storeFile = File(rutaClave)
                 storeType = "pkcs12"
                 storePassword = System.getenv("MECAM_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("MECAM_KEY_ALIAS")
