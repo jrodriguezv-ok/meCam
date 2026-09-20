@@ -14,7 +14,7 @@ Convierte celulares Android viejos en cámaras de seguridad con detección de pe
 
 1. **App MeCam (Android):** corre en segundo plano (con la pantalla apagada) y transmite video de forma constante a la computadora. Si el celular se calienta, baja la velocidad y, si sigue subiendo, se pausa hasta que se enfríe. Detecta si el celular está vertical u horizontal y adapta la imagen.
 2. **Servidor (computadora):** recibe el video, detecta y sigue personas y autos con YOLO, y los muestra en un centro de control web con todas las cámaras. Cuando detecta una persona, guarda un clip corto que se puede ver, descargar o borrar desde la página de grabaciones.
-3. **Vinculación por QR:** para conectar un celular (o un aparato que solo quiera ver las cámaras) se escanea un QR que muestra la ventana de MeCam. Cada QR es distinto y sirve una sola vez, cada dispositivo recibe su propia credencial y las cámaras se conectan cifradas.
+3. **Vinculación por QR:** para conectar un celular (o un aparato que solo quiera ver las cámaras) se escanea un QR que muestra el centro de control. Cada QR es distinto y sirve una sola vez, cada dispositivo recibe su propia credencial y las cámaras se conectan cifradas.
 
 El video no sale de tu red: no se sube a ningún servidor de terceros.
 
@@ -22,7 +22,7 @@ El video no sale de tu red: no se sube a ningún servidor de terceros.
 
 1. En el celular, abre la sección **Releases** de este repositorio y descarga `MeCam.apk`.
 2. Ábrelo y permite instalar apps de origen desconocido si el celular lo pide.
-3. En la app toca **Escanear QR para vincular** y apunta al QR que muestra la ventana de MeCam en la computadora (botón **Vincular dispositivo**). Después toca **Iniciar cámara**.
+3. En la app toca **Escanear QR para vincular** y apunta al QR que aparece en el centro de control de la computadora (o en la ventana de MeCam, botón **Vincular dispositivo**). Después toca **Iniciar cámara**.
 
 La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android siempre pide confirmar la instalación).
 
@@ -32,7 +32,7 @@ La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android 
 2. Descarga el proyecto (en esta página, **Code** y luego **Download ZIP**) y extráelo. Abre la carpeta `servidor`.
 3. Haz doble clic en **Iniciar MeCam.bat**. La primera vez instala lo necesario y tarda varios minutos.
 4. En la ventana de MeCam, haz clic en el botón verde **Iniciar servidor**.
-5. Haz clic en **Vincular dispositivo** para que aparezca el QR (uno distinto, de un solo uso, por cada celular).
+5. El QR aparece solo en la pantalla de bienvenida del centro de control (uno distinto, de un solo uso, por cada celular). Más tarde, el botón **Vincular dispositivo** muestra uno nuevo.
 
 La ventana abre el centro de control (`https://localhost:8443/ver`) y muestra la lista de dispositivos vinculados. La computadora y los celulares deben estar en la misma red Wi-Fi. Si algo no conecta, usa el botón **Abrir puertos del firewall** (una sola vez) o revisa las [preguntas frecuentes](FAQ.md).
 

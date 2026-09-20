@@ -53,6 +53,7 @@ eventos = deque(maxlen=100)  # registro de actividad (lo más nuevo primero)
 _id_evento = itertools.count(1)
 _id_cuadro = itertools.count(1)
 IP_LOCAL = "127.0.0.1"
+HUELLA = ""                 # huella del certificado (va dentro del QR)
 parando = False             # True mientras el servidor se está deteniendo
 registro = vinculos.Registro()   # dispositivos vinculados por QR
 grabador = grabaciones.Grabador(al_guardar=lambda texto: evento(texto))   # clips cuando se detecta una persona
@@ -456,6 +457,18 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
 .rec.off{display:none}
 .fab.rec-on{background:rgba(239,68,68,.16);border-color:#ef4444;color:#f87171;box-shadow:0 0 18px rgba(239,68,68,.4)}
 @media (max-width:700px){#dock{gap:6px;padding:7px}.fab{width:42px;height:42px}.fab svg{width:24px;height:24px}}
+[hidden]{display:none!important}
+.pill.accion{cursor:pointer;color:var(--texto);border-color:rgba(56,189,248,.55);background:rgba(56,189,248,.1);font:inherit;font-size:12.5px}
+.pill.accion:hover{background:rgba(56,189,248,.2)}
+.pill.accion svg{width:17px;height:17px;color:var(--acento)}
+.qr-svg{width:230px;height:230px;margin:12px auto;background:#fff;border-radius:14px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.qr-svg svg{width:100%;height:100%;display:block}
+.qr-texto{color:var(--suave);line-height:1.5;margin:6px 0}
+.qr-info{font-size:13px;color:var(--suave);margin:4px 0 8px;min-height:1.2em}
+#qrModal{position:fixed;inset:0;z-index:40;background:rgba(4,7,11,.92);display:grid;place-items:center;padding:16px}
+.qr-panel{position:relative;background:var(--panel);border:1px solid var(--borde);border-radius:22px;padding:24px 28px;max-width:440px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.qr-panel h2{margin:0 0 4px;font-size:20px}
+.qr-panel .ic{position:absolute;top:12px;right:12px}
 /* el espacio para los botones flotantes va al final para ganarle a la regla base de #grid */
 @media (min-width:701px){#grid{padding-right:86px}}
 @media (max-width:700px){#grid{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
@@ -467,6 +480,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   <span class="pill" id="pSrv"><span class="punto"></span><b id="pSrvTxt">Conectando…</b></span>
   <span class="pill"><b id="nCams">0</b> cámaras · <b id="nVivo">0</b> en vivo</span>
   <span class="pill" id="reloj"></span>
+  <button class="pill accion" id="bVincular" data-i="qr" hidden title="Vincular un celular o un aparato para ver las cámaras (V)"><span>Vincular dispositivo</span></button>
   <span class="espacio"></span>
 </header>
 
@@ -486,13 +500,31 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   <div class="caja">
     <div class="vacio-ic" data-i="logo"></div>
     <h2>Esperando cámaras…</h2>
-    <p>Para conectar un celular:</p>
-    <ol>
-      <li>En la computadora, en la ventana de <b>MeCam</b>, toca <b>Vincular dispositivo</b>.</li>
-      <li>En el celular, abre <b>MeCam</b> y toca <b>Escanear QR para vincular</b>.</li>
-    </ol>
+    <div id="qrBloque" hidden>
+      <div class="qr-svg" id="qrSvgBienvenida"></div>
+      <p class="qr-info" id="qrInfoBienvenida"></p>
+      <p class="qr-texto">En el celular, abre la app <b>MeCam</b> y toca <b>Escanear QR para vincular</b>.</p>
+    </div>
+    <div id="pasosBloque">
+      <p>Para conectar un celular:</p>
+      <ol>
+        <li>En la computadora, abre esta página o la ventana de <b>MeCam</b> y toca <b>Vincular dispositivo</b>.</li>
+        <li>En el celular, abre <b>MeCam</b> y toca <b>Escanear QR para vincular</b>.</li>
+      </ol>
+    </div>
     <p>Aparecerá aquí solo, con su propio nombre.</p>
     <p class="chico">IP de esta computadora (solo para la conexión manual): <code id="vacioIp">—</code></p>
+  </div>
+</div>
+
+<div id="qrModal" hidden>
+  <div class="qr-panel">
+    <button class="ic" id="qrCerrar" data-i="cerrar" title="Cerrar (Esc)" aria-label="Cerrar"></button>
+    <h2>Vincular dispositivo</h2>
+    <div class="qr-svg" id="qrSvgModal"></div>
+    <p class="qr-info" id="qrInfoModal"></p>
+    <p class="qr-texto"><b>Una cámara:</b> en el celular abre la app MeCam y toca «Escanear QR para vincular».<br><b>Otro aparato para ver las cámaras:</b> escanéalo con su cámara normal y abre el enlace.</p>
+    <p class="chico">Cada QR sirve una sola vez y vence en 5 minutos.</p>
   </div>
 </div>
 
@@ -556,6 +588,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
   let eventosPrev = -1;
   let eventosVistos = -1;           // hasta qué evento ya vio la persona (para el punto rojo)
   let grabacionActiva = true;       // interruptor general de la grabación de clips
+  let puedeVincular = false;        // solo la propia computadora puede generar QR
   const foco = { nombre: null, zoom: 1, x: 0, y: 0 };
 
   function urlStream(n, extra) {
@@ -743,6 +776,9 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     camaras = d.camaras || [];
     grabacionActiva = d.grabacion !== false;
     pintarRec();
+    puedeVincular = !!d.puede_vincular;
+    $('#bVincular').hidden = !puedeVincular;
+    gestionarQrBienvenida();
     const nombres = new Set(camaras.map(function (c) { return c.nombre; }));
     let cambio = false;
 
@@ -1033,6 +1069,75 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     ponerGrabacion({ activo: !grabacionActiva }, function (d) { return d.activo ? 'Grabación de clips activada' : 'Grabación de clips desactivada'; });
   };
   $('#focoRec').onclick = function () { if (foco.nombre) alternarRecCamara(foco.nombre); };
+  // ---- Vincular dispositivos: QR de un solo uso (solo se ve en la propia computadora)
+  const qr = { token: null, timer: null, destino: null, pendiente: false };
+  const DESTINO_BIENVENIDA = { svg: '#qrSvgBienvenida', info: '#qrInfoBienvenida' };
+  const DESTINO_MODAL = { svg: '#qrSvgModal', info: '#qrInfoModal' };
+  function qrInfo(texto, ok) {
+    if (!qr.destino) return;
+    const e = $(qr.destino.info);
+    e.textContent = texto;
+    e.style.color = ok ? 'var(--ok)' : '';
+  }
+  function qrNuevo() {
+    if (qr.pendiente || !qr.destino) return;
+    qr.pendiente = true;
+    fetch('/api/qr', { method: 'POST' })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function (d) {
+        if (!qr.destino) return;
+        qr.token = d.token;
+        $(qr.destino.svg).innerHTML = d.svg;
+        qrInfo('Vence en ' + Math.floor(d.segundos / 60) + ':' + String(d.segundos % 60).padStart(2, '0'));
+      })
+      .catch(function () { qrInfo('No se pudo generar el QR'); })
+      .then(function () { qr.pendiente = false; });
+  }
+  function qrSondear() {
+    if (!qr.token || !qr.destino) return;
+    fetch('/api/qr/estado?token=' + encodeURIComponent(qr.token), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!qr.destino) return;
+        if (d.estado === 'vigente') {
+          qrInfo('Vence en ' + Math.floor(d.segundos / 60) + ':' + String(d.segundos % 60).padStart(2, '0'));
+        } else if (d.estado === 'usado') {
+          qr.token = null;
+          qrInfo('✓ Vinculado' + (d.nombre ? ': ' + d.nombre : ''), true);
+          setTimeout(qrNuevo, 2500);
+        } else {
+          qr.token = null;
+          qrNuevo();
+        }
+      })
+      .catch(function () {});
+  }
+  function qrDetener() {
+    clearInterval(qr.timer); qr.timer = null;
+    if (qr.token) fetch('/api/qr?token=' + encodeURIComponent(qr.token), { method: 'DELETE' }).catch(function () {});
+    if (qr.destino) $(qr.destino.svg).textContent = '';
+    qr.token = null; qr.destino = null;
+  }
+  function qrIniciar(destino) {
+    qrDetener();
+    qr.destino = destino;
+    qrNuevo();
+    qr.timer = setInterval(qrSondear, 2000);
+  }
+  function gestionarQrBienvenida() {
+    $('#qrBloque').hidden = !puedeVincular;
+    $('#pasosBloque').hidden = puedeVincular;
+    const mostrar = puedeVincular && camaras.length === 0 && $('#qrModal').hidden;
+    if (mostrar && qr.destino !== DESTINO_BIENVENIDA) qrIniciar(DESTINO_BIENVENIDA);
+    else if (!mostrar && qr.destino === DESTINO_BIENVENIDA) qrDetener();
+  }
+  function cerrarQr() { $('#qrModal').hidden = true; qrDetener(); gestionarQrBienvenida(); }
+  $('#bVincular').onclick = function () { $('#qrModal').hidden = false; qrIniciar(DESTINO_MODAL); };
+  $('#qrCerrar').onclick = cerrarQr;
+  $('#qrModal').addEventListener('click', function (e) { if (e.target === $('#qrModal')) cerrarQr(); });
+  window.addEventListener('beforeunload', function () {
+    if (qr.token) fetch('/api/qr?token=' + encodeURIComponent(qr.token), { method: 'DELETE', keepalive: true });
+  });
   function iconosPantalla() {
     const n = document.fullscreenElement ? 'reducir' : 'ampliar';
     cambiarIcono($('#bPantalla'), n);
@@ -1072,7 +1177,8 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const ampliada = !$('#foco').hidden;
     if (e.key === 'Escape') {
-      if (ampliada) cerrarFoco(); else alternarActividad(false);
+      if (!$('#qrModal').hidden) cerrarQr();
+      else if (ampliada) cerrarFoco(); else alternarActividad(false);
     } else if (ampliada) {
       if (e.key === 'ArrowLeft') vecina(-1);
       else if (e.key === 'ArrowRight') vecina(1);
@@ -1090,6 +1196,7 @@ svg{width:16px;height:16px;fill:currentColor;flex:none}
       else if (k === 'f') pantallaCompleta(document.documentElement);
       else if (k === 'g') location.href = '/grabaciones';
       else if (k === 'q') $('#bRec').click();
+      else if (k === 'v' && puedeVincular) $('#bVincular').click();
     }
   });
   window.addEventListener('resize', layout);
@@ -1260,7 +1367,8 @@ async def estado(request):
         })
     total = eventos[0]["id"] if eventos else 0
     return web.json_response(
-        {"ip": IP_LOCAL, "grabacion": grabador.activo, "camaras": lista, "eventos": list(eventos)[:40], "total_eventos": total},
+        {"ip": IP_LOCAL, "grabacion": grabador.activo, "camaras": lista, "eventos": list(eventos)[:40], "total_eventos": total,
+         "puede_vincular": es_local(request.remote)},
         headers={"Cache-Control": "no-store"},
     )
 
@@ -1317,6 +1425,76 @@ async def api_grabaciones(request):
     datos = grabador.resumen()
     datos["clips"] = grabador.listar()
     return web.json_response(datos, headers={"Cache-Control": "no-store"})
+
+
+def es_local(remoto):
+    """¿El pedido viene de esta misma computadora? (Solo desde aquí se pueden generar QR de vinculación.)"""
+    try:
+        return ipaddress.ip_address(remoto or "").is_loopback
+    except ValueError:
+        return False
+
+
+def svg_qr(texto):
+    """Dibuja el QR como imagen vectorial (SVG), sin depender de nada en el navegador."""
+    import qrcode
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=2)
+    qr.add_data(texto)
+    qr.make(fit=True)
+    m = qr.get_matrix()
+    n = len(m)
+    trazos = []
+    for y, fila in enumerate(m):
+        x = 0
+        while x < n:
+            if fila[x]:
+                x0 = x
+                while x < n and fila[x]:
+                    x += 1
+                trazos.append(f"M{x0} {y}h{x - x0}v1h-{x - x0}z")
+            else:
+                x += 1
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {n} {n}" shape-rendering="crispEdges">'
+            f'<rect width="{n}" height="{n}" fill="#fff"/><path d="{"".join(trazos)}" fill="#000"/></svg>')
+
+
+def _solo_pc():
+    return web.json_response({"error": "Solo desde la computadora donde corre MeCam"}, status=403)
+
+
+async def api_qr_nuevo(request):
+    """Crea un código de un solo uso y devuelve el QR listo para mostrar."""
+    if not es_local(request.remote):
+        return _solo_pc()
+    token = registro.nuevo_token()
+    try:
+        svg = svg_qr(f"https://{IP_LOCAL}:{PORT}/v/{token}#fp={HUELLA}")
+    except ImportError:
+        registro.anular_token(token)
+        return web.json_response({"error": "Falta el componente del QR (qrcode)"}, status=500)
+    return web.json_response({"token": token, "svg": svg, "segundos": vinculos.MINUTOS_QR * 60},
+                             headers={"Cache-Control": "no-store"})
+
+
+async def api_qr_estado(request):
+    if not es_local(request.remote):
+        return _solo_pc()
+    token = request.query.get("token", "")
+    estado_token = registro.estado_token(token)
+    nombre = None
+    if estado_token == "usado":
+        lista = registro.lista()
+        if lista:
+            nombre = max(lista, key=lambda d: d["creado"])["nombre"]
+    return web.json_response({"estado": estado_token, "segundos": registro.segundos_restantes(token), "nombre": nombre},
+                             headers={"Cache-Control": "no-store"})
+
+
+async def api_qr_anular(request):
+    if not es_local(request.remote):
+        return _solo_pc()
+    registro.anular_token(request.query.get("token", ""))
+    return web.json_response({"ok": True})
 
 
 async def api_grabacion(request):
@@ -1459,10 +1637,11 @@ def ip_local():
         s.close()
 
 
-async def iniciar(ctx, ip, parar=None, al_arrancar=None):
+async def iniciar(ctx, ip, parar=None, al_arrancar=None, huella=""):
     """Levanta el servidor. Sin 'parar' corre hasta Ctrl+C; con 'parar' termina cuando se activa."""
-    global IP_LOCAL, parando
+    global IP_LOCAL, parando, HUELLA
     IP_LOCAL = ip
+    HUELLA = huella
     parando = False
     app = web.Application(middlewares=[autorizar])
     app.add_routes([
@@ -1478,6 +1657,9 @@ async def iniciar(ctx, ip, parar=None, al_arrancar=None):
         web.get("/api/grabaciones", api_grabaciones),
         web.delete("/api/grabaciones/{id}", api_borrar),
         web.post("/api/grabacion", api_grabacion),
+        web.post("/api/qr", api_qr_nuevo),
+        web.get("/api/qr/estado", api_qr_estado),
+        web.delete("/api/qr", api_qr_anular),
         web.get("/miniatura/{id}", miniatura),
         web.get("/clip/{id}", clip),
         web.get("/archivo/{id}", archivo),
@@ -1587,16 +1769,16 @@ class Servidor:
             self.corriendo = True
             self.listo.set()
 
-        await iniciar(ctx, self.ip, self.parar, listo)
+        await iniciar(ctx, self.ip, self.parar, listo, self.huella)
 
 
 def main():
     ip = ip_local()
-    ruta_cert, ruta_clave, _ = vinculos.asegurar_certificado(ip)
+    ruta_cert, ruta_clave, huella = vinculos.asegurar_certificado(ip)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(ruta_cert, ruta_clave)
     try:
-        asyncio.run(iniciar(ctx, ip))
+        asyncio.run(iniciar(ctx, ip, huella=huella))
     except KeyboardInterrupt:
         pass
 

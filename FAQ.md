@@ -61,6 +61,7 @@ Los botones están en una **barra flotante**: a la derecha en la computadora y a
 |---|---|---|
 | Grabaciones | Abre la página con los clips guardados | **G** |
 | Grabación de clips | Interruptor general: **rojo** = activada, **punteado** = desactivada | **Q** |
+| Vincular dispositivo | Muestra el QR para conectar un celular (solo se ve en la propia computadora) | **V** |
 | Actividad | Historial con un ícono por tipo de aviso. Un **punto rojo** te avisa si hay algo nuevo | **A** |
 | Alerta sonora | Suena un aviso cuando aparece una persona (la campana se ve tachada cuando está apagada) | **S** |
 | Sin recuadros | Muestra el video original, sin los recuadros de detección | **R** |
@@ -98,7 +99,7 @@ Vincular es "presentar" un celular a tu computadora. En la ventana de MeCam hace
 
 ### ¿Cómo vinculo un celular cámara?
 
-1. En la ventana de MeCam de la computadora, haz clic en **Vincular dispositivo**. Aparece un QR.
+1. En la computadora, abre el centro de control (`https://localhost:8443/ver`, o el botón **Centro de control** de la ventana de MeCam). Mientras no haya cámaras, **el QR aparece solo** en la pantalla de bienvenida. Si ya hay cámaras conectadas, haz clic en el botón **Vincular dispositivo** de arriba (o pulsa **V**). También puedes usar el botón **Vincular dispositivo** de la ventana de MeCam.
 2. En el celular abre **MeCam** y toca **Escanear QR para vincular**. Toca **Permitir** si pide permiso de cámara.
 3. Apunta la cámara del celular al QR. Cuando aparezca «¡Listo! Vinculada como «Cámara 1»», toca **Iniciar cámara**.
 
@@ -106,11 +107,15 @@ El nombre lo asigna el servidor («Cámara 1», «Cámara 2»…). Puedes cambia
 
 ### ¿Cómo vinculo otro aparato para ver las cámaras?
 
-1. En la computadora haz clic en **Vincular dispositivo**.
+1. En la computadora haz clic en **Vincular dispositivo** (en el centro de control o en la ventana de MeCam).
 2. Con la **cámara normal** del celular (o de la tablet) escanea el QR y abre el enlace que aparece.
 3. Saldrá el aviso «Tu conexión no es privada»: toca **Configuración avanzada** y luego **Acceder a ... (sitio no seguro)**. Se abre el centro de control, ya vinculado. La próxima vez basta con entrar a la dirección de siempre.
 
 El aparato debe estar en el mismo Wi-Fi que la computadora al vincularlo.
+
+### ¿Por qué no veo el QR o el botón «Vincular dispositivo»?
+
+Por seguridad, el QR **solo se muestra en la computadora donde corre MeCam**. Si abres el centro de control desde otro aparato (otro celular, otra computadora, o por Tailscale), no aparece el QR ni el botón, y en su lugar verás los pasos para vincular. Abre `https://localhost:8443/ver` en la computadora de MeCam. Si aun así no aparece, comprueba que el servidor esté iniciado y que hayas actualizado MeCam en la computadora (puede faltar el componente del QR: mira «La ventana de MeCam no se abre»).
 
 ### ¿Cada QR es distinto? ¿Se puede reutilizar?
 
@@ -374,6 +379,7 @@ Otra app está usando la cámara. Ciérrala, cierra MeCam y vuelve a abrirla. Si
 - **«Ese QR ya se usó o venció»:** cada QR sirve una sola vez y dura 5 minutos. La ventana muestra uno nuevo automáticamente; escanea el que se ve en ese momento.
 - **«No se pudo verificar la computadora»:** escaneaste un QR que ya no corresponde a esta computadora. Escanea el más reciente y comprueba que no haya dos ventanas de MeCam abiertas.
 - **«No se pudo conectar»:** el celular y la computadora deben estar en el **mismo Wi-Fi**, con el servidor en marcha, y el firewall debe permitir el puerto **8443** (botón **Abrir puertos del firewall** de la ventana de MeCam).
+- **El escáner se abre en horizontal:** actualiza la app a la **versión 9 o superior**; desde ahí el escáner se abre en vertical.
 - **El escáner no abre la cámara:** en la app toca **Permitir** cuando pida el permiso de cámara. Si lo negaste, actívalo en **Ajustes**, **Aplicaciones**, **MeCam**, **Permisos**.
 
 ### La app no se instala o dice que hay un conflicto con la versión instalada
