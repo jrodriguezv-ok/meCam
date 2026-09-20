@@ -1271,9 +1271,18 @@ async def api_vincular(request):
     if not registro.canjear_token(str(datos.get("token", ""))):
         await asyncio.sleep(1)
         raise web.HTTPForbidden(text="codigo invalido o vencido")
-    disp_id, secreto, nombre = registro.vincular("camara", str(datos.get("modelo", "")))
-    evento(f"{nombre}: cámara vinculada")
-    print(f"[*] Dispositivo vinculado: {nombre} (cámara)")
+    modelo = str(datos.get("modelo", ""))
+    # Si el celular ya estaba vinculado y manda su credencial anterior, se renueva el MISMO dispositivo (no se duplica)
+    previo = registro.verificar(str(datos.get("previo", "")))
+    renovada = registro.revincular(previo["id"], modelo) if previo is not None and previo["tipo"] == "camara" else None
+    if renovada is not None:
+        disp_id, secreto, nombre = renovada
+        evento(f"{nombre}: cámara vinculada de nuevo (no se duplicó)")
+        print(f"[*] Dispositivo vinculado de nuevo: {nombre} (cámara, sin duplicar)")
+    else:
+        disp_id, secreto, nombre = registro.vincular("camara", modelo)
+        evento(f"{nombre}: cámara vinculada")
+        print(f"[*] Dispositivo vinculado: {nombre} (cámara)")
     return web.json_response({"id": disp_id, "secreto": secreto, "nombre": nombre})
 
 

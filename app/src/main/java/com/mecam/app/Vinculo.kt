@@ -75,14 +75,13 @@ object Vinculo {
     }
 
     /** Canjea el código del QR y guarda la credencial propia de este celular. */
-    fun vincular(ctx: Context, d: Datos): Resultado {
+    fun vincular(ctx: Context, d: Datos, previo: String? = null): Resultado {
         return try {
             val cliente = clienteFijado(d.huella).callTimeout(15, TimeUnit.SECONDS).build()
-            val cuerpo = JSONObject()
-                .put("token", d.token)
-                .put("modelo", Build.MODEL ?: "")
-                .toString()
-                .toRequestBody("application/json".toMediaType())
+            val json = JSONObject().put("token", d.token).put("modelo", Build.MODEL ?: "")
+            // Si este celular ya estaba vinculado a esta misma computadora, manda su credencial para que no se duplique
+            if (previo != null) json.put("previo", previo)
+            val cuerpo = json.toString().toRequestBody("application/json".toMediaType())
             val pedido = Request.Builder()
                 .url("https://${d.host}:${d.puerto}/api/vincular")
                 .post(cuerpo)
@@ -112,6 +111,20 @@ object Vinculo {
         } catch (e: Exception) {
             Resultado(false, "Error: ${e.message}")
         }
+    }
+
+    fun huellaGuardada(ctx: Context): String =
+        ctx.getSharedPreferences("mecam", Context.MODE_PRIVATE).getString("v_huella", "") ?: ""
+
+    fun hostGuardado(ctx: Context): String =
+        ctx.getSharedPreferences("mecam", Context.MODE_PRIVATE).getString("v_host", "") ?: ""
+
+    /** "id.secreto" del vínculo actual, o null si no está vinculada. */
+    fun credencialActual(ctx: Context): String? {
+        val p = ctx.getSharedPreferences("mecam", Context.MODE_PRIVATE)
+        val id = p.getString("v_id", "") ?: ""
+        val secreto = p.getString("v_secreto", "") ?: ""
+        return if (id.isNotEmpty() && secreto.isNotEmpty()) "$id.$secreto" else null
     }
 
     fun vinculada(ctx: Context): Boolean {

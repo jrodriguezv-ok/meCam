@@ -124,6 +124,19 @@ class Registro:
             self._guardar()
             return disp_id, secreto, nombre
 
+    def revincular(self, disp_id, modelo=""):
+        """Le da una credencial nueva a un dispositivo que ya existe (así un celular no se duplica)."""
+        with self.lock:
+            d = self.dispositivos.get(disp_id)
+            if d is None:
+                return None
+            secreto = secrets.token_urlsafe(24)
+            d["hash"] = _huella_secreto(secreto)
+            if modelo:
+                d["modelo"] = modelo[:60]
+            self._guardar()
+            return d["id"], secreto, d["nombre"]
+
     def verificar(self, credencial):
         """Comprueba 'id.secreto'. Devuelve los datos del dispositivo o None."""
         if not credencial or "." not in credencial:

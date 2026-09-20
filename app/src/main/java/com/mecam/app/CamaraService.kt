@@ -121,6 +121,7 @@ class CamaraService : LifecycleService() {
         }
 
         if (cliente == null) {
+            EstadoCamara.poner(Fase.CONECTANDO, "Conectando con la computadora…")
             val constructor = if (seguro) Vinculo.clienteFijado(huella) else OkHttpClient.Builder()
             cliente = constructor.pingInterval(20, TimeUnit.SECONDS).build()
             conectar()
@@ -147,16 +148,24 @@ class CamaraService : LifecycleService() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 conectado = true
                 esperando = false
-                actualizarNotificacion("Transmitiendo como $nombreVisible")
+                estado(Fase.CONECTANDO, "Conectado. Enviando las primeras imágenes…")
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 if (text.startsWith("nombre:")) {
                     // El servidor puede cambiar el nombre si otro celular ya usa el mismo
                     nombreVisible = text.removePrefix("nombre:")
-                    actualizarNotificacion("Transmitiendo como $nombreVisible")
+                    if (EstadoCamara.fase == Fase.TRANSMITIENDO) {
+                        estado(Fase.TRANSMITIENDO, "Transmitiendo como $nombreVisible")
+                    } else {
+                        actualizarNotificacion("Transmitiendo como $nombreVisible")
+                    }
                 } else {
                     esperando = false
+                    // La primera confirmación de imagen recibida significa que ya se está transmitiendo de verdad
+                    if (EstadoCamara.fase != Fase.TRANSMITIENDO && !enfriando) {
+                        estado(Fase.TRANSMITIENDO, "Transmitiendo como $nombreVisible")
+                    }
                 }
             }
 
@@ -184,7 +193,7 @@ class CamaraService : LifecycleService() {
         conectado = false
         esperando = false
         if (detenido) return
-        actualizarNotificacion(motivo ?: "Reconectando...")
+        estado(if (motivo != null) Fase.ERROR else Fase.CONECTANDO, motivo ?: "Reconectando con la computadora…")
         principal.postDelayed({ conectar() }, if (lento) 30_000L else 3000L)
     }
 
@@ -212,7 +221,7 @@ class CamaraService : LifecycleService() {
             p.unbindAll()
             p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, analisis)
         } catch (e: Exception) {
-            actualizarNotificacion("Error de cámara: ${e.message}")
+            estado(Fase.ERROR, "Error de cámara: ${e.message}")
         }
     }
 
@@ -276,22 +285,20 @@ class CamaraService : LifecycleService() {
                 if (!enfriando && temp >= TEMP_MAX) {
                     enfriando = true
                     proveedor?.unbindAll()
-                    actualizarNotificacion("En pausa por calor ($temp °C)")
+                    estado(Fase.PAUSA, "En pausa por calor ($temp °C)")
                 } else if (enfriando) {
                     if (temp > 0f && temp <= TEMP_OK) {
                         enfriando = false
                         calor = false
                         enlazar()
-                        actualizarNotificacion("Transmitiendo como $nombreVisible")
+                        estado(Fase.CONECTANDO, "Reanudando después de enfriarse…")
                     }
                 } else {
                     val nuevo = if (calor) temp >= TEMP_OK else temp >= TEMP_BAJAR
                     if (nuevo != calor) {
                         calor = nuevo
-                        actualizarNotificacion(
-                            if (calor) "Velocidad reducida por calor ($temp °C)"
-                            else "Transmitiendo como $nombreVisible"
-                        )
+                        val aviso = if (calor) "Velocidad reducida por calor ($temp °C)" else "Transmitiendo como $nombreVisible"
+                        if (conectado) estado(Fase.TRANSMITIENDO, aviso) else actualizarNotificacion(aviso)
                     }
                 }
                 principal.postDelayed(this, 30_000)
@@ -353,12 +360,19 @@ class CamaraService : LifecycleService() {
             .setOngoing(true)
             .build()
 
+    /** Avisa el estado a la pantalla principal (semáforo) y a la notificación. */
+    private fun estado(fase: Fase, texto: String) {
+        EstadoCamara.poner(fase, texto)
+        actualizarNotificacion(texto)
+    }
+
     private fun actualizarNotificacion(texto: String) {
         getSystemService(NotificationManager::class.java).notify(1, crearNotificacion(texto))
     }
 
     override fun onDestroy() {
         detenido = true
+        EstadoCamara.poner(Fase.DETENIDA, "Detenida")
         principal.removeCallbacksAndMessages(null)
         sensorGiro?.disable()
         proveedor?.unbindAll()
