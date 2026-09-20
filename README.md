@@ -22,7 +22,7 @@ El video no sale de tu red: no se sube a ningún servidor de terceros.
 
 1. En el celular, abre la sección **Releases** de este repositorio y descarga `MeCam.apk`.
 2. Ábrelo y permite instalar apps de origen desconocido si el celular lo pide.
-3. En la app toca **Escanear QR para vincular** y apunta al QR que aparece en el centro de control de la computadora (o en la ventana de MeCam, botón **Vincular dispositivo**). Después toca **Iniciar cámara**.
+3. En la app toca **Escanear QR para vincular** y apunta al QR que aparece en el centro de control de la computadora (o en la ventana de MeCam, botón **Vincular dispositivo**). La cámara se enciende sola al vincular, y el semáforo de la app muestra su estado (rojo: detenida, amarillo: conectando, verde: transmitiendo).
 
 La app avisa cuando hay una versión nueva y se actualiza desde dentro (Android siempre pide confirmar la instalación).
 
@@ -58,6 +58,7 @@ Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCa
 - [x] Centro de control con botones flotantes, íconos nuevos y atajos de teclado
 - [ ] Zonas de alerta
 - [x] Vinculación por QR: un código distinto y de un solo uso por dispositivo, con conexión cifrada
+- [x] La app enciende la cámara al vincular, muestra un semáforo de estado y evita duplicar el dispositivo
 - [ ] Detección dentro del propio celular (sin computadora)
 
 ## Seguridad y privacidad

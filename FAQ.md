@@ -101,9 +101,29 @@ Vincular es "presentar" un celular a tu computadora. En la ventana de MeCam hace
 
 1. En la computadora, abre el centro de control (`https://localhost:8443/ver`, o el botón **Centro de control** de la ventana de MeCam). Mientras no haya cámaras, **el QR aparece solo** en la pantalla de bienvenida. Si ya hay cámaras conectadas, haz clic en el botón **Vincular dispositivo** de arriba (o pulsa **V**). También puedes usar el botón **Vincular dispositivo** de la ventana de MeCam.
 2. En el celular abre **MeCam** y toca **Escanear QR para vincular**. Toca **Permitir** si pide permiso de cámara.
-3. Apunta la cámara del celular al QR. Cuando aparezca «¡Listo! Vinculada como «Cámara 1»», toca **Iniciar cámara**.
+3. Apunta la cámara del celular al QR (el escáner se abre en vertical). Al vincular, **la cámara se enciende sola**: verás un cartel verde «✓ Vinculada como «Cámara 1»…» y el semáforo de la app pasará de amarillo a **verde**. No hace falta tocar nada más.
 
 El nombre lo asigna el servidor («Cámara 1», «Cámara 2»…). Puedes cambiarlo con **Renombrar** en la ventana de MeCam.
+
+### ¿Qué significa el semáforo de la app?
+
+En la pantalla principal de MeCam hay tres luces y un botón grande:
+
+| Luz | Qué significa |
+|---|---|
+| **Roja** | La cámara está **detenida**, o hay un problema que se explica en el texto de abajo (por ejemplo, «ya no está vinculada») |
+| **Amarilla** | Se está conectando con la computadora, se está reconectando o está **en pausa por calor** |
+| **Verde** | La cámara está **encendida y transmitiendo** imágenes |
+
+El botón grande es **verde** («Encender cámara») cuando está detenida y **rojo** («Detener cámara») cuando está encendida. Al abrir la app, si la cámara estaba encendida se reanuda sola; si la detuviste tú, queda detenida hasta que la vuelvas a encender.
+
+### ¿Qué pasa si escaneo el QR otra vez con el mismo celular?
+
+Si el celular ya está vinculado a esa computadora, la app te avisa («Este celular ya está vinculado») y no hace nada, salvo que elijas **Volver a vincular**. En ese caso se **renueva el mismo dispositivo**: conserva su nombre y no se crea un duplicado (esto requiere el servidor actualizado). Si la computadora cambió de IP, la app lo detecta y actualiza el vínculo sola, también sin duplicar.
+
+### Vinculé el mismo celular dos veces: ¿cómo quito el duplicado?
+
+Con la app anterior a la versión 10, o con un servidor sin actualizar, escanear otra vez creaba un dispositivo nuevo. Para quitar el que sobra: en la ventana de MeCam, en la lista **Dispositivos vinculados**, elige el que quieras eliminar y haz clic en **Desvincular**. Para saber cuál es el que usa el celular, enciende la cámara: el que se pone con el círculo lleno (●) es el bueno; el otro queda con el círculo vacío (○).
 
 ### ¿Cómo vinculo otro aparato para ver las cámaras?
 
@@ -170,7 +190,7 @@ Sí, en la app: **Ajustes** y luego **Conexión manual**. Solo funciona mientras
 2. Toca **MeCam.apk**. Si Chrome avisa que el archivo puede dañar el dispositivo, toca **Descargar de todos modos**.
 3. Toca **Abrir** y luego **Instalar**. Si el celular pide permiso para instalar apps de origen desconocido, toca **Ajustes**, activa **Permitir de esta fuente**, vuelve atrás y toca **Instalar**.
 4. Si Play Protect avisa, toca **Más detalles** y luego **Instalar de todos modos**.
-5. Abre **MeCam** y toca **Escanear QR para vincular** (el QR aparece en la ventana de MeCam de la computadora: mira «¿Cómo vinculo un celular cámara?»). Después toca **Iniciar cámara** y **Permitir** en los permisos.
+5. Abre **MeCam** y toca **Escanear QR para vincular** (el QR aparece en el centro de control de la computadora: mira «¿Cómo vinculo un celular cámara?»). Toca **Permitir** en los permisos que pida: la cámara se enciende sola al vincular.
 
 ### ¿Cómo instalo y ejecuto el servidor en la computadora?
 
@@ -359,7 +379,7 @@ Se instaló una versión de NumPy incompatible con YOLO. Ejecuta `python -m pip 
 
 ### La app dice "Reconectando..."
 
-La app no logra hablar con el servidor. Revisa en orden:
+El semáforo de la app queda en amarillo o en rojo: no logra hablar con el servidor. Revisa en orden:
 1. El servidor está en marcha (la ventana de MeCam dice **En marcha**).
 2. Si la vinculaste con QR, la app se conecta sola. Si usas la conexión manual, la IP escrita es la que muestra la ventana de MeCam (y solo funciona mientras MeCam está **Abierto**).
 3. El firewall permite el puerto **8080** (ver "timed out").
@@ -376,7 +396,7 @@ El router puede darle otra IP a la computadora cuando se reinicia. Para que no c
 
 ### La imagen sale de lado o al revés
 
-En MeCam cambia el selector **Orientación** a **vertical**, **horizontal (izquierda)** o **horizontal (derecha)**, y toca **Iniciar cámara** otra vez.
+En MeCam cambia el selector **Orientación** a **vertical**, **horizontal (izquierda)** o **horizontal (derecha)**, y luego apaga y vuelve a encender la cámara con el botón grande de la app (**Detener cámara** y **Encender cámara**).
 
 ### La app dice que no pudo abrir la cámara
 
