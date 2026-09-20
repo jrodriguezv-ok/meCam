@@ -63,6 +63,7 @@ Para actualizar el servidor, descarga el proyecto de nuevo y abre **Iniciar MeCa
 ## Seguridad y privacidad
 
 - Cuando vinculas el primer dispositivo, MeCam se **protege**: solo entran los dispositivos vinculados con un QR (además de esta computadora y de tu red Tailscale). Mientras no hayas vinculado nada, la ventana muestra «Abierto». **No abras puertos en tu router.** Para verlas desde fuera de casa usa una VPN, como se explica en las [preguntas frecuentes](FAQ.md).
+- **Compartir la app no comparte tu acceso:** el APK es igual para todos y no lleva ninguna credencial. Cada celular se vincula con un QR de su propia computadora, que sirve una sola vez y vence en 5 minutos. Cuida el QR mientras está a la vista.
 - Grabar personas o la vía pública puede estar regulado (por ejemplo, RGPD en Europa). Úsalo solo en espacios propios y avisa a quien pueda ser grabado.
 
 ## Créditos

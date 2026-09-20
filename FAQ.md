@@ -113,6 +113,15 @@ El nombre lo asigna el servidor («Cámara 1», «Cámara 2»…). Puedes cambia
 
 El aparato debe estar en el mismo Wi-Fi que la computadora al vincularlo.
 
+### Si comparto la app con otras personas, ¿comparto también mi acceso?
+
+**No.** La app (el archivo `MeCam.apk`) es igual para todos y **no lleva dentro ningún QR, contraseña ni acceso a tus cámaras**. Cada celular recibe su credencial propia al escanear un QR de *su* computadora, y esa credencial se guarda solo en ese celular. Por eso:
+
+- Quien instale la app **no puede ver ni conectarse a tus cámaras** si no escanea un QR de tu computadora.
+- Cada persona necesita **su propia computadora con el servidor de MeCam**, porque la detección se hace ahí. La app sola no hace nada.
+- **Cuida el QR mientras está a la vista.** Quien lo escanee primero (dentro de los 5 minutos) queda vinculado. No lo compartas por foto ni captura de pantalla. Si lo hiciste, cierra la ventana del QR (se anula) y genera uno nuevo.
+- Si un QR llegó a alguien por error, en la lista de dispositivos de la ventana de MeCam puedes ver quién se vinculó y usar **Desvincular**.
+
 ### ¿Por qué no veo el QR o el botón «Vincular dispositivo»?
 
 Por seguridad, el QR **solo se muestra en la computadora donde corre MeCam**. Si abres el centro de control desde otro aparato (otro celular, otra computadora, o por Tailscale), no aparece el QR ni el botón, y en su lugar verás los pasos para vincular. Abre `https://localhost:8443/ver` en la computadora de MeCam. Si aun así no aparece, comprueba que el servidor esté iniciado y que hayas actualizado MeCam en la computadora (puede faltar el componente del QR: mira «La ventana de MeCam no se abre»).
